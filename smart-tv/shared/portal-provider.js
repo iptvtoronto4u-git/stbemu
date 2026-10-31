@@ -13,7 +13,25 @@
   if(!/^(?:[a-z0-9_-]+\/)*[a-z0-9_-]+\.php$/i.test(endpoint))throw new Error('Use a relative API path such as portal.php or server/load.php');
   this.url=base+'/'+endpoint;
   this.mac=profile.mac.toUpperCase();this.token=null;this.generation=0;
-  this.transport=options.transport||xhrTransport;
+  this.transport=options.transport||(root.IPTVRelayConfig?relayTransport:xhrTransport);
+ }
+ function relayTransport(request,callback){
+  var config=root.IPTVRelayConfig,xhr=new XMLHttpRequest(),done=false;
+  function finish(error,value){if(done)return;done=true;callback(error,value);}
+  try{
+   var mac=decodeURIComponent(request.cookie.match(/^mac=([^;]+)/)[1]);
+   xhr.open('POST',config.url,true);xhr.timeout=20000;
+   xhr.setRequestHeader('Content-Type','application/json');
+   xhr.setRequestHeader('Authorization','Bearer '+config.key);
+   xhr.onload=function(){
+    if(xhr.status!==200){finish(fail('RELAY','Connection helper unavailable or not paired.'));return;}
+    try{var value=JSON.parse(xhr.responseText);if(typeof value.status!=='number'||typeof value.body!=='string')throw new Error();finish(null,value);}
+    catch(_){finish(fail('RELAY','Invalid connection helper response.'));}
+   };
+   xhr.onerror=function(){finish(fail('RELAY','Cannot reach the PC connection helper. Keep the PC on and connected.'));};
+   xhr.ontimeout=function(){finish(fail('TIMEOUT','PC connection helper timed out.'));};
+   xhr.send(JSON.stringify({url:request.url,mac:mac,token:request.headers.Authorization?request.headers.Authorization.substring(7):null}));
+  }catch(_){finish(fail('RELAY','PC connection helper is not configured.'));}
  }
  function xhrTransport(request,callback){
   var xhr=new XMLHttpRequest(),done=false;
@@ -37,7 +55,7 @@
   if(this.token)headers.Authorization='Bearer '+this.token;
   this.transport({url:this.url+'?'+Object.keys(query).map(function(key){return encodeURIComponent(key)+'='+encodeURIComponent(query[key]);}).join('&'),headers:headers,cookie:'mac='+encodeURIComponent(this.mac)+'; stb_lang=en; timezone=America%2FToronto'},function(error,response){
    if(epoch!==self.generation){callback(fail('CANCELLED','Connection closed.'));return;}
-   if(error){callback(error.code==='TIMEOUT'?fail('TIMEOUT','Portal request timed out.'):fail('NETWORK','Portal request failed. Check connectivity, cookie and CORS support.'));return;}
+   if(error){callback(error.code==='TIMEOUT'?fail('TIMEOUT','Portal request timed out.'):error.code==='RELAY'?fail('RELAY','Cannot use the PC connection helper. Keep this PC on and connected to the same network as the TV.'):fail('NETWORK','Portal request failed. Check connectivity, cookie and CORS support.'));return;}
    if(response.status===401||response.status===403){self.token=null;callback(fail('AUTH','Portal rejected access. Reconnect or check provider authorization.'));return;}
    if(response.status<200||response.status>=300){callback(fail('HTTP','Portal returned HTTP '+response.status+'. Check the configured API path.'));return;}
    var data;

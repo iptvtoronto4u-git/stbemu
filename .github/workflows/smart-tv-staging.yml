@@ -29,6 +29,8 @@ jobs:
           node smart-tv/tests/portal-diagnostics.test.js
           node smart-tv/tests/tizen-player.test.js
           node smart-tv/tests/portal-provider.test.js
+          node --check smart-tv/relay/server.cjs
+          node smart-tv/tests/relay.test.cjs
           python3 - <<'PY'
           import json, xml.etree.ElementTree as ET
           json.load(open('smart-tv/lg/appinfo.json'))
@@ -46,8 +48,8 @@ jobs:
       - name: Stage Samsung and LG prototypes
         run: |
           mkdir -p dist/samsung dist/lg
-          cp smart-tv/shared/{icon.png,index.html,style.css,app.js,profile-utils.js,portal-provider.js,portal-diagnostics.js,tizen-player.js} dist/samsung/
-          cp smart-tv/shared/{icon.png,index.html,style.css,app.js,profile-utils.js,portal-provider.js,portal-diagnostics.js,tizen-player.js} dist/lg/
+          cp smart-tv/shared/{icon.png,index.html,style.css,app.js,profile-utils.js,relay-config.js,portal-provider.js,portal-diagnostics.js,tizen-player.js} dist/samsung/
+          cp smart-tv/shared/{icon.png,index.html,style.css,app.js,profile-utils.js,relay-config.js,portal-provider.js,portal-diagnostics.js,tizen-player.js} dist/lg/
           cp smart-tv/samsung/config.xml smart-tv/samsung/build-and-install.ps1 dist/samsung/
           cp smart-tv/lg/appinfo.json dist/lg/
           (cd dist/samsung && zip -q -r ../IPTV-TORONTO-Tizen-source.zip .)

@@ -33,7 +33,9 @@ The web runtime must allow MAC cookies, credentialed CORS and Authorization
 headers for the provider origin. Standard Chromium may silently discard the
 forbidden Cookie header; this implementation cannot override browser policy.
 If the Q60D does this too, a provider-supported cookie/session transport or a
-separately secured, authorized relay is required. No relay is included here.
+separately secured, authorized relay is required. The Q60D was confirmed to block
+this Cookie header. A paired Windows test helper is now included; see
+[relay/README.md](relay/README.md). The PC must stay on while testing.
 Network, cookie and CORS failures may be indistinguishable to JavaScript.
 A token alone does not prove that a MAC cookie was delivered or access granted.
 No device fingerprint, firmware impersonation, CORS bypass or DRM workaround
