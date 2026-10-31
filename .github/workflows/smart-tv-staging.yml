@@ -46,7 +46,7 @@ jobs:
           mkdir -p dist/samsung dist/lg
           cp smart-tv/shared/{index.html,style.css,app.js,profile-utils.js,portal-provider.js,portal-diagnostics.js,tizen-player.js} dist/samsung/
           cp smart-tv/shared/{index.html,style.css,app.js,profile-utils.js,portal-provider.js} dist/lg/
-          cp smart-tv/samsung/config.xml dist/samsung/
+          cp smart-tv/samsung/config.xml smart-tv/samsung/build-and-install.ps1 dist/samsung/
           cp smart-tv/lg/appinfo.json dist/lg/
           (cd dist/samsung && zip -q -r ../IPTV-TORONTO-Tizen-source.zip .)
           (cd dist/lg && zip -q -r ../IPTV-TORONTO-webOS-source.zip .)
