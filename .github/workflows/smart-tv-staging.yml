@@ -22,6 +22,8 @@ jobs:
           node --check smart-tv/shared/profile-utils.js
           node smart-tv/tests/profile-utils.test.js
           node --check smart-tv/shared/portal-provider.js
+          node --check smart-tv/shared/tizen-player.js
+          node smart-tv/tests/tizen-player.test.js
           node smart-tv/tests/portal-provider.test.js
           python3 - <<'PY'
           import json, xml.etree.ElementTree as ET
@@ -40,7 +42,7 @@ jobs:
       - name: Stage Samsung and LG prototypes
         run: |
           mkdir -p dist/samsung dist/lg
-          cp smart-tv/shared/{index.html,style.css,app.js,profile-utils.js,portal-provider.js} dist/samsung/
+          cp smart-tv/shared/{index.html,style.css,app.js,profile-utils.js,portal-provider.js,tizen-player.js} dist/samsung/
           cp smart-tv/shared/{index.html,style.css,app.js,profile-utils.js,portal-provider.js} dist/lg/
           cp smart-tv/samsung/config.xml dist/samsung/
           cp smart-tv/lg/appinfo.json dist/lg/
