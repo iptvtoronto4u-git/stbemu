@@ -19,7 +19,7 @@ if (!$application -or $application.GetAttribute("package") -cnotmatch '^[A-Za-z0
 # Checkout assets are in shared; staging ZIP assets are beside this script.
 $assets = Join-Path (Split-Path -Parent $source) "shared"
 if (!(Test-Path -LiteralPath (Join-Path $assets "index.html"))) { $assets = $source }
-$files = @("index.html", "style.css", "app.js", "profile-utils.js", "portal-provider.js", "portal-diagnostics.js", "tizen-player.js")
+$files = @("icon.png", "index.html", "style.css", "app.js", "profile-utils.js", "portal-provider.js", "portal-diagnostics.js", "tizen-player.js")
 foreach ($file in $files) {
  if (!(Test-Path -LiteralPath (Join-Path $assets $file))) { throw "Missing app asset: $file" }
 }
