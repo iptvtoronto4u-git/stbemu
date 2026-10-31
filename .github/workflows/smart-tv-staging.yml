@@ -1,0 +1,42 @@
+name: Smart TV Prototype Staging
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'smart-tv/**'
+      - '.github/workflows/smart-tv-staging.yml'
+  workflow_dispatch:
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate JavaScript and manifests
+        run: |
+          node --check smart-tv/shared/app.js
+          python3 - <<'PY'
+          import json, xml.etree.ElementTree as ET
+          json.load(open('smart-tv/lg/appinfo.json'))
+          ET.parse('smart-tv/samsung/config.xml')
+          print('TV web app JavaScript and manifests validated')
+          PY
+      - name: Stage Samsung and LG prototypes
+        run: |
+          mkdir -p dist/samsung dist/lg
+          cp smart-tv/shared/{index.html,style.css,app.js} dist/samsung/
+          cp smart-tv/shared/{index.html,style.css,app.js} dist/lg/
+          cp smart-tv/samsung/config.xml dist/samsung/
+          cp smart-tv/lg/appinfo.json dist/lg/
+          (cd dist/samsung && zip -q -r ../IPTV-TORONTO-Tizen-source.zip .)
+          (cd dist/lg && zip -q -r ../IPTV-TORONTO-webOS-source.zip .)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: IPTV-TORONTO-SmartTV-staging-source
+          path: |
+            dist/*.zip
+          retention-days: 30
