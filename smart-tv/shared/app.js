@@ -3,7 +3,7 @@
   var KEY = 'iptvtoronto.profiles.v1';
   var profiles = [];
   try { var saved = JSON.parse(localStorage.getItem(KEY) || '[]'); if (Array.isArray(saved)) profiles = saved; } catch (_) {}
-  var selected = -1;
+  var selected = -1;\n  var selectedForConnection = -1;
   var home = document.getElementById('home'), editor = document.getElementById('editor');
   var form = document.getElementById('form'), grid = document.getElementById('profiles');
   var name = document.getElementById('name'), portal = document.getElementById('portal'), mac = document.getElementById('mac');
@@ -23,7 +23,7 @@
       var title = document.createElement('strong'); title.textContent = p.name;
       var details = document.createElement('small'); details.textContent = p.portal + ' • ' + p.mac;
       b.appendChild(title); b.appendChild(details);
-      b.addEventListener('click', function () { edit(i); }); grid.appendChild(b);
+      b.addEventListener('click', function () { edit(i); }); grid.appendChild(b);\n      var test = document.createElement('button'); test.textContent = 'Check provider support: ' + p.name;\n      test.addEventListener('click', function () {\n        selectedForConnection = i;\n        var provider = new window.IPTVPortalProvider(profiles[selectedForConnection]);\n        provider.checkConnectivity(function (error) {\n          document.getElementById('status').textContent = error ? error.message : 'Provider connection ready';\n        });\n      }); grid.appendChild(test);
     });
     document.getElementById('status').textContent = profiles.length ?
       'Profiles saved locally. Portal authentication and streaming are not implemented yet.' :
