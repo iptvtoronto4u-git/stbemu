@@ -1,10 +1,10 @@
 # Stalker integration and Samsung update
 
-This app implements a limited, configurable Stalker API client: `stb/handshake`,
+This app implements a limited, configurable Stalker API client: `stb/handshake`, basic `stb/get_profile` initialization,
 `itv/get_genres`, paginated `itv/get_ordered_list`, and `itv/create_link`.
 It sends the registered MAC as a cookie and the session token as a Bearer header.
 It does not claim MAG firmware identity, generate device IDs/signatures, perform
-DRM operations, or implement device-bound `get_profile` authentication.
+DRM operations, or supply firmware/device identity for device-bound authentication.
 A successful STBEmu subscription does not establish Samsung client compatibility.
 
 ## Profile setup
@@ -14,7 +14,7 @@ automatic: host-only URLs use stalker_portal/server/load.php; portal base paths
 (including a trailing /c/) use server/load.php beneath that base. Existing New4K
 profiles with the old portal.php default are corrected automatically at connection
 time. Developer-supplied custom endpoint values remain supported internally for
-other providers. No endpoint probing is performed.
+other providers. No endpoint probing is performed. After handshake, basic account initialization runs before categories load.
 Save and open Live TV saves the three fields, authenticates automatically and loads
 channels from the first category. Selecting a saved profile opens it directly.
 Separate Edit buttons preserve profile editing and deletion. Choose a channel to play. Next page loads more

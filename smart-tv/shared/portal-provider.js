@@ -42,17 +42,26 @@
    if(response.status<200||response.status>=300){callback(fail('HTTP','Portal returned HTTP '+response.status+'. Check the configured API path.'));return;}
    var data;
    try{data=JSON.parse(response.body);if(!data||!Object.prototype.hasOwnProperty.call(data,'js'))throw new Error();}
-   catch(e){callback(fail('FORMAT','Portal did not return supported JSON. Check API path and provider compatibility.'));return;}
+   catch(e){
+    if(/(?:authorization|authentication)\s+(?:failed|required)|unauthori[sz]ed|not\s+authori[sz]ed/i.test(String(response.body||''))){self.token=null;callback(fail('AUTH','Portal rejected the session. Check your registered MAC or provider authorization.'));return;}
+    var stage={handshake:'sign-in',get_profile:'account setup',get_genres:'loading live TV categories',get_ordered_list:'loading live channels',create_link:'starting playback'};
+    callback(fail('FORMAT','Portal returned an unexpected response during '+(stage[action]||'connection')+'. Check provider compatibility.'));return;
+   }
    if(data.js===false||data.js===null||data.js.error){callback(fail('PORTAL','Portal rejected this operation or requires an unsupported authentication flow.'));return;}
    callback(null,data.js);
   });
  };
  Provider.prototype.authenticate=function(callback){
-  var self=this;this.generation++;this.token=null;
+  var self=this;this.generation++;this.token=null;var authGeneration=this.generation;
   this.request('stb','handshake',{},function(error,data){
    if(error){callback(error);return;}
    if(typeof data.token!=='string'||!data.token||data.token.length>4096||/[\r\n]/.test(data.token)){callback(fail('AUTH','No valid session token returned. This portal may require unsupported device authentication.'));return;}
-   self.token=data.token;callback(null);
+   self.token=data.token;
+   // Initialize the authorized account session. No firmware/device identity fields.
+   self.request('stb','get_profile',{},function(error){
+    if(error && self.generation===authGeneration)self.token=null;
+    callback(error||null);
+   });
   });
  };
  Provider.prototype.checkConnectivity=Provider.prototype.authenticate;

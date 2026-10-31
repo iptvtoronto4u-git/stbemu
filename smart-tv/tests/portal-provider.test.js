@@ -6,11 +6,12 @@ let requests=[],answers=[],pending;
 const p=new P(profile,{transport:(req,cb)=>{requests.push(req);const next=answers.shift();if(next==='pending'){pending=cb;return;}cb(null,{status:200,body:JSON.stringify({js:next})});}});
 let error,result;function receive(e,r){error=e;result=r;}
 p.listCategories(receive);assert.equal(error.code,'SESSION');
-answers.push({token:'secret'});p.authenticate(receive);assert.equal(error,null);
+answers.push({token:'secret'},{});p.authenticate(receive);assert.equal(error,null);
 assert.equal(requests[0].url.split('?')[0],'https://example.org/stalker_portal/server/load.php');assert.equal(requests[0].headers.Authorization,undefined);assert.match(requests[0].cookie,/mac=00%3A1A/);
-answers.push([{id:1,title:'News'}]);p.listCategories(receive);assert.equal(result[0].name,'News');assert.equal(requests[1].headers.Authorization,'Bearer secret');assert.ok(!requests[1].url.includes('secret'));
+assert.match(requests[1].url,/action=get_profile/);assert.equal(requests[1].headers.Authorization,'Bearer secret');
+answers.push([{id:1,title:'News'}]);p.listCategories(receive);assert.equal(result[0].name,'News');assert.equal(requests[2].headers.Authorization,'Bearer secret');assert.ok(!requests[2].url.includes('secret'));
 answers.push({data:[{id:2,name:'Channel',cmd:'ffrt http://localhost/ch/2'}],total_items:2,max_page_items:1});p.listChannels('1',1,receive);assert.equal(result.hasMore,true);const channel=result.channels[0];
-answers.push({cmd:'ffmpeg https://stream.example/live.m3u8?key=private'});p.getPlaybackUrl(channel,receive);assert.equal(result,'https://stream.example/live.m3u8?key=private');assert.match(requests[3].url,/cmd=ffrt%20http/);
+answers.push({cmd:'ffmpeg https://stream.example/live.m3u8?key=private'});p.getPlaybackUrl(channel,receive);assert.equal(result,'https://stream.example/live.m3u8?key=private');assert.match(requests[4].url,/cmd=ffrt%20http/);
 for(const cmd of ['javascript:alert(1)','ffmpeg http://localhost/ch/2','ffmpeg https://example.org/a extra']){answers.push({cmd});p.getPlaybackUrl(channel,receive);assert.equal(error.code,'STREAM');}
 answers.push('pending');p.listCategories(receive);p.logout();pending(null,{status:200,body:'{"js":[]}'});assert.equal(error.code,'CANCELLED');assert.equal(p.token,null);
 for(const [response,code] of [[{status:403,body:'secret'},'AUTH'],[{status:500,body:'secret'},'HTTP'],[{status:200,body:'<html>secret</html>'},'FORMAT'],[{status:200,body:'{"js":false}'},'PORTAL'],[{status:200,body:'{"js":{}}'},'AUTH']]){
@@ -27,3 +28,13 @@ for(const [portal,endpoint,expected] of [
  ['http://4k1.new4k.cc/',undefined,'http://4k1.new4k.cc/stalker_portal/server/load.php']
 ])assert.equal(new P({...profile,portal,endpoint}).url,expected);
 console.log('PASS: automatic Stalker defaults, base paths, custom overrides and legacy New4K profile');
+
+// Authentication must initialize the profile before reporting success.
+let initRequests=[],initPending,initComplete=false;
+const init=new P(profile,{transport:(req,cb)=>{initRequests.push(req);if(initRequests.length===1)cb(null,{status:200,body:'{"js":{"token":"session"}}'});else initPending=cb;}});
+init.authenticate(e=>{error=e;initComplete=true;});assert.equal(initComplete,false);assert.match(initRequests[1].url,/type=stb&action=get_profile/);assert.ok(!/stb_type|device_id|signature|image_version/.test(initRequests[1].url));
+initPending(null,{status:200,body:'{"js":{}}'});assert.equal(initComplete,true);assert.equal(error,null);
+const denied=new P(profile,{transport:(req,cb)=>cb(null,{status:200,body:req.url.includes('action=handshake')?'{"js":{"token":"session"}}':'Authorization failed.'})});
+denied.authenticate(receive);assert.equal(error.code,'AUTH');assert.equal(denied.token,null);
+const odd=new P(profile,{transport:(_,cb)=>cb(null,{status:200,body:'<html>private</html>'})});odd.authenticate(receive);assert.match(error.message,/sign-in/);assert.ok(!error.message.includes('private'));
+console.log('PASS: account initialization, no firmware identity, setup failure and stage-specific errors');

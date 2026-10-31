@@ -16,7 +16,7 @@ const path = require('node:path');
        if(request.pathname !== '/stalker_portal/server/load.php') throw new Error('Incorrect default endpoint');
        const action=request.searchParams.get('action');
        if(action==='handshake' && window.failHandshake) { this.status=403;this.responseText='';setTimeout(()=>this.onload(),0);return; }
-       const js=action==='handshake'?{token:'mock-token'}:action==='get_genres'?[{id:'1',title:'News'}]:action==='get_ordered_list'?{data:[{id:'1',name:'Test channel',cmd:'test'}],total_items:1,max_page_items:1}:{cmd:'https://example.org/live.m3u8'};
+       const js=action==='handshake'?{token:'mock-token'}:action==='get_profile'?{}:action==='get_genres'?[{id:'1',title:'News'}]:action==='get_ordered_list'?{data:[{id:'1',name:'Test channel',cmd:'test'}],total_items:1,max_page_items:1}:{cmd:'https://example.org/live.m3u8'};
        this.status=200;this.responseText=JSON.stringify({js});setTimeout(()=>this.onload(),0);
      }
    };
