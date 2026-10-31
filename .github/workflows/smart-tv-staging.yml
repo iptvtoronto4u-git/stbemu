@@ -29,11 +29,19 @@ jobs:
           ET.parse('smart-tv/samsung/config.xml')
           print('TV web app JavaScript and manifests validated')
           PY
+      - name: Install Chromium browser test dependencies
+        run: |
+          npm install --no-save playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Run TV-sized browser smoke test
+        run: |
+          mkdir -p dist
+          node smart-tv/tests/tv-browser-smoke.cjs
       - name: Stage Samsung and LG prototypes
         run: |
           mkdir -p dist/samsung dist/lg
           cp smart-tv/shared/{index.html,style.css,app.js,profile-utils.js,portal-provider.js} dist/samsung/
-          cp smart-tv/shared/{index.html,style.css,app.js} dist/lg/
+          cp smart-tv/shared/{index.html,style.css,app.js,profile-utils.js,portal-provider.js} dist/lg/
           cp smart-tv/samsung/config.xml dist/samsung/
           cp smart-tv/lg/appinfo.json dist/lg/
           (cd dist/samsung && zip -q -r ../IPTV-TORONTO-Tizen-source.zip .)
@@ -43,4 +51,5 @@ jobs:
           name: IPTV-TORONTO-SmartTV-staging-source
           path: |
             dist/*.zip
+            dist/*.png
           retention-days: 30
