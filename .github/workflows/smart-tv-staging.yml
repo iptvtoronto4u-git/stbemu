@@ -18,7 +18,7 @@ jobs:
           node-version: '22'
       - name: Validate JavaScript and manifests
         run: |
-          node --check smart-tv/shared/app.js\n          node --check smart-tv/shared/profile-utils.js\n          node smart-tv/tests/profile-utils.test.js
+          node --check smart-tv/shared/app.js\n          node --check smart-tv/shared/profile-utils.js\n          node smart-tv/tests/profile-utils.test.js\n          node --check smart-tv/shared/portal-provider.js\n          node smart-tv/tests/portal-provider.test.js
           python3 - <<'PY'
           import json, xml.etree.ElementTree as ET
           json.load(open('smart-tv/lg/appinfo.json'))
@@ -28,7 +28,7 @@ jobs:
       - name: Stage Samsung and LG prototypes
         run: |
           mkdir -p dist/samsung dist/lg
-          cp smart-tv/shared/{index.html,style.css,app.js,profile-utils.js} dist/samsung/
+          cp smart-tv/shared/{index.html,style.css,app.js,profile-utils.js,portal-provider.js} dist/samsung/
           cp smart-tv/shared/{index.html,style.css,app.js} dist/lg/
           cp smart-tv/samsung/config.xml dist/samsung/
           cp smart-tv/lg/appinfo.json dist/lg/
