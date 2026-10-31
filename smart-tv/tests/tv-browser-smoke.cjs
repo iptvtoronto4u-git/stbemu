@@ -69,6 +69,3 @@ const path = require('node:path');
  console.log('PASS: field navigation, OK editing, IME Done/Cancel/Back, button navigation, save/reload/edit, Escape');
  await browser.close();
 })().catch(e=>{console.error(e);process.exit(1)});
-
-
-

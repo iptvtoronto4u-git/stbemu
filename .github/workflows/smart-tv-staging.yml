@@ -59,4 +59,3 @@ jobs:
             dist/*.zip
             dist/*.png
           retention-days: 30
-

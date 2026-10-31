@@ -26,7 +26,7 @@ For Android/Fire TV: run the existing GitHub Actions Android workflow. Fire OS d
 ## Security and next steps
 - Profiles are stored in localStorage on webOS/Tizen and SharedPreferences on Android; do not store passwords or session tokens in these plaintext stores.
 - Confirm supported portal API, authentication and rights with upstream New4K provider. No protocol endpoint has been verified.
-- Implement authorization-aware Stalker portal client only from documented/approved interfaces, add secure credential storage and a licensed streaming engine per platform.
+- Validate the configurable Stalker subset with the provider and Samsung hardware; see STALKER_INTEGRATION.md. Tokens remain in memory; firmware/device identity authentication is unsupported.
 - Add platform-specific remote key handling, playback lifecycle, offline states and real-device tests.
 - Samsung .wgt requires a signing certificate; LG .ipk requires the webOS packaging tool. CI below produces **unsigned staging ZIPs**, not installable store packages.
 

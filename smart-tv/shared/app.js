@@ -164,6 +164,3 @@
   render();
   document.getElementById('add').focus();
 }());
-
-
-

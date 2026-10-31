@@ -33,7 +33,7 @@
   if(this.token)headers.Authorization='Bearer '+this.token;
   this.transport({url:this.url+'?'+Object.keys(query).map(function(key){return encodeURIComponent(key)+'='+encodeURIComponent(query[key]);}).join('&'),headers:headers,cookie:'mac='+encodeURIComponent(this.mac)+'; stb_lang=en; timezone=America%2FToronto'},function(error,response){
    if(epoch!==self.generation){callback(fail('CANCELLED','Connection closed.'));return;}
-   if(error){callback(fail('NETWORK','Portal request failed. Check connectivity, cookie and CORS support.'));return;}
+   if(error){callback(error.code==='TIMEOUT'?fail('TIMEOUT','Portal request timed out.'):fail('NETWORK','Portal request failed. Check connectivity, cookie and CORS support.'));return;}
    if(response.status===401||response.status===403){self.token=null;callback(fail('AUTH','Portal rejected access. Reconnect or check provider authorization.'));return;}
    if(response.status<200||response.status>=300){callback(fail('HTTP','Portal returned HTTP '+response.status+'. Check the configured API path.'));return;}
    var data;
@@ -44,10 +44,10 @@
   });
  };
  Provider.prototype.authenticate=function(callback){
-  var self=this;this.token=null;
+  var self=this;this.generation++;this.token=null;
   this.request('stb','handshake',{},function(error,data){
    if(error){callback(error);return;}
-   if(typeof data.token!=='string'||!data.token||/[\r\n]/.test(data.token)){callback(fail('AUTH','No valid session token returned. This portal may require unsupported device authentication.'));return;}
+   if(typeof data.token!=='string'||!data.token||data.token.length>4096||/[\r\n]/.test(data.token)){callback(fail('AUTH','No valid session token returned. This portal may require unsupported device authentication.'));return;}
    self.token=data.token;callback(null);
   });
  };
@@ -57,14 +57,14 @@
   if(!this.authorized(callback))return;
   this.request('itv','get_genres',{},function(error,data){
    if(error){callback(error);return;}if(!Array.isArray(data)){callback(fail('FORMAT','Unsupported category response.'));return;}
-   callback(null,data.map(function(row){return {id:String(row.id),name:String(row.title||row.name||'Unnamed category')};}));
+   callback(null,data.filter(function(row){return row && row.id !== undefined;}).map(function(row){return {id:String(row.id),name:String(row.title||row.name||'Unnamed category')};}));
   });
  };
  Provider.prototype.listChannels=function(category,page,callback){
   if(!this.authorized(callback))return;
   this.request('itv','get_ordered_list',{genre:category,p:page,force_ch_link_check:0},function(error,data){
    if(error){callback(error);return;}if(!data||!Array.isArray(data.data)){callback(fail('FORMAT','Unsupported channel response.'));return;}
-   callback(null,{channels:data.data.map(function(row){return {id:String(row.id),name:String(row.name||'Unnamed channel'),cmd:typeof row.cmd==='string'?row.cmd:''};}),hasMore:page*Number(data.max_page_items||data.data.length)<Number(data.total_items||0)});
+   callback(null,{channels:data.data.filter(function(row){return row && row.id !== undefined;}).map(function(row){return {id:String(row.id),name:String(row.name||'Unnamed channel'),cmd:typeof row.cmd==='string'?row.cmd:''};}),hasMore:data.data.length>0 && page*Number(data.max_page_items||data.data.length)<Number(data.total_items||0)});
   });
  };
  Provider.prototype.getPlaybackUrl=function(channel,callback){
@@ -80,5 +80,3 @@
  Provider.prototype.logout=function(callback){this.token=null;this.generation++;if(callback)callback(null);};
  root.IPTVPortalProvider=Provider;
 }(typeof window!=='undefined'?window:this));
-
-

@@ -21,7 +21,7 @@ The reseller panel and a server hostname are **not** sufficient to authenticate 
 - Documented endpoints and response schemas for categories, channels, EPG, VOD and catch-up.
 - Authorized stream URLs/formats (HLS/DASH), CORS requirements, DRM license handling, token expiry and error semantics.
 
-Do not use undocumented MAC impersonation, firmware identity spoofing, or DRM circumvention. Until the approved provider API is supplied, `portal-provider.js` intentionally returns `PROVIDER_INTEGRATION_REQUIRED`.
+Do not use undocumented MAC impersonation, firmware identity spoofing, or DRM circumvention. The configurable Stalker subset is now implemented. See [STALKER_INTEGRATION.md](STALKER_INTEGRATION.md) for API paths, cookie/CORS requirements and unsupported authentication flows. New4K and Q60D interoperability remain unverified.
 
 ## Device test plan
 - Remote: arrows, OK, Return (10009), Back, media play/pause, long press, focus recovery.
