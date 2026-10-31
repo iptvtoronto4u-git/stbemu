@@ -51,5 +51,37 @@
       if (!editor.hidden) { event.preventDefault(); showHome(); }
     }
   });
+  // TV remotes may report Return as keyCode 10009; use explicit spatial focus
+  // navigation so older Tizen WebKit engines do not depend on CSS focus APIs.
+  document.addEventListener('keydown', function (event) {
+    var code = event.keyCode || event.which;
+    if (code === 10009) {
+      if (!editor.hidden) { event.preventDefault(); showHome(); }
+      else if (window.tizen && window.tizen.application) {
+        try { window.tizen.application.getCurrentApplication().exit(); } catch (_) {}
+      }
+      return;
+    }
+    if (code !== 37 && code !== 38 && code !== 39 && code !== 40) return;
+    var active = document.activeElement;
+    if (active && active.tagName === 'INPUT') return;
+    var controls = Array.prototype.slice.call(document.querySelectorAll('button:not([hidden]),input:not([hidden])'))
+      .filter(function (el) { return el.offsetWidth > 0 && el.offsetHeight > 0; });
+    if (!controls.length) return;
+    var origin = active && active.getBoundingClientRect ? active.getBoundingClientRect() : null;
+    if (!origin || controls.indexOf(active) < 0) { controls[0].focus(); event.preventDefault(); return; }
+    var cx = origin.left + origin.width / 2, cy = origin.top + origin.height / 2, best = null, score = Infinity;
+    controls.forEach(function (el) {
+      if (el === active) return;
+      var r = el.getBoundingClientRect(), dx = r.left + r.width / 2 - cx, dy = r.top + r.height / 2 - cy;
+      var forward = code === 37 ? -dx : code === 39 ? dx : code === 38 ? -dy : dy;
+      var lateral = code === 37 || code === 39 ? Math.abs(dy) : Math.abs(dx);
+      if (forward <= 2) return;
+      var cost = forward + lateral * 3;
+      if (cost < score) { score = cost; best = el; }
+    });
+    if (best) { best.focus(); event.preventDefault(); }
+  });
   render();
+  document.getElementById('add').focus();
 }());
