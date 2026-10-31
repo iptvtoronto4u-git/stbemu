@@ -3,5 +3,7 @@
   <name>IPTV TORONTO</name><content src="index.html"/>
   <tizen:application id="IPTVToronto.IPTVToronto" package="IPTVToronto" required_version="2.3"/>
   <tizen:profile name="tv"/>
+  <tizen:privilege name="http://tizen.org/privilege/internet"/>
+  <access origin="*" subdomains="true"/>
   <tizen:setting screen-orientation="landscape" context-menu="disable" background-support="disable" encryption="disable" install-location="auto" hwkey-event="enable"/>
 </widget>
