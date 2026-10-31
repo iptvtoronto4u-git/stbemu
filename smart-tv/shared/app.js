@@ -37,11 +37,10 @@
   form.addEventListener('submit', function (event) {
     event.preventDefault();
     var url = portal.value.trim(), address = mac.value.trim().toUpperCase();
-    if (!/^https?:\/\//i.test(url) || !/^([0-9A-F]{2}:){5}[0-9A-F]{2}$/.test(address)) {
-      alert('Enter a valid HTTP(S) portal URL and MAC address. Prefer HTTPS when available.'); return;
-    }
-    if (url.toLowerCase().startsWith('http:') && !confirm('This portal uses unencrypted HTTP. Continue?')) return;
-    var p = {name:name.value.trim(),portal:url,mac:address};
+    var result = window.IPTVProfileUtils.validateProfile(name.value, url, address);
+    if (!result.ok) { alert(result.error); return; }
+    if (result.insecure && !confirm('This portal uses unencrypted HTTP. Continue?')) return;
+    var p = result.profile;
     if (!p.name) return;
     if (selected >= 0) profiles[selected] = p; else profiles.push(p);
     persist(); showHome();
