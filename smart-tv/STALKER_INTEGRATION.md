@@ -9,12 +9,12 @@ A successful STBEmu subscription does not establish Samsung client compatibility
 
 ## Profile setup
 
-Existing saved profiles remain editable and use `portal.php` by default.
-Enter your authorized portal base URL and registered MAC locally on the TV.
-The new API path field accepts relative paths such as `portal.php` or
-`server/load.php`. For `/stalker_portal/server/load.php`, set the base URL to
-`https://provider.example/stalker_portal` and path to `server/load.php`.
-A trailing `/c/` is removed from the base. No endpoint discovery or probing is done.
+Users enter only a profile name, portal URL and registered MAC. The API path is
+automatic: host-only URLs use stalker_portal/server/load.php; portal base paths
+(including a trailing /c/) use server/load.php beneath that base. Existing New4K
+profiles with the old portal.php default are corrected automatically at connection
+time. Developer-supplied custom endpoint values remain supported internally for
+other providers. No endpoint probing is performed.
 Select Connect, choose a category, and choose a channel. Next page loads more
 channels. Stop returns to the browser; Return stops video first, then disconnects.
 Disconnect and app backgrounding clear the in-memory session.
@@ -57,7 +57,7 @@ local profiles. It does not uninstall first. Keep the prior signed WGT for rollb
 reinstall it if needed. Certificate/DUID permission and TV Developer Mode must
 already be valid. CI provides source ZIPs, not signed installable WGTs.
 
-On TV verify: saved profiles survive; API path edits save; Connect shows either
+On TV verify: saved profiles survive; the API path is automatic; Connect shows either
 categories or an actionable error; pagination changes channels; channel playback
 is visible; switching during preparation does not start the previous stream;
 Stop/Return work; reconnect succeeds; backgrounding clears the session. Record

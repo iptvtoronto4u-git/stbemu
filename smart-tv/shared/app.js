@@ -9,8 +9,7 @@
   var form = document.getElementById('form'), grid = document.getElementById('profiles');
   var name = document.getElementById('name'), portal = document.getElementById('portal'), mac = document.getElementById('mac');
   var editingField = null;
-  var endpoint = document.getElementById('endpoint');
-  var fields = [name, portal, endpoint, mac];
+  var fields = [name, portal, mac];
   var provider = null, connection = 0, category = '', page = 1, busy = false;
   var browser = document.getElementById('browser'), player = new window.IPTVTizenPlayer();
   function status(error, message) { document.getElementById('live-status').textContent = error ? error.message : message; }
@@ -71,7 +70,7 @@
   function showHome() { finishEditing(); editor.hidden = true; home.hidden = false; render(); document.getElementById('add').focus(); }
   function edit(index) {
     selected = index; var p = profiles[index] || {};
-    endpoint.value = p.endpoint || 'portal.php'; name.value = p.name || ''; portal.value = p.portal || ''; mac.value = p.mac || '';
+    name.value = p.name || ''; portal.value = p.portal || ''; mac.value = p.mac || '';
     document.getElementById('editor-title').textContent = index < 0 ? 'New profile' : 'Edit profile';
     document.getElementById('remove').hidden = index < 0;
     home.hidden = true; editor.hidden = false; name.focus();
@@ -87,7 +86,7 @@
       var test = document.createElement('button'); test.textContent = 'Connect: ' + p.name; test.onclick = function () { connect(p); }; grid.appendChild(test);
     });
     document.getElementById('status').textContent = profiles.length ?
-      'Profiles saved locally. Connect using the configured Stalker API path.' :
+      'Profiles saved locally. Select Connect to load your channels.' :
       'Set up an authorized Stalker profile to get started.';
   }
   document.getElementById('add').addEventListener('click', function () { edit(-1); });
@@ -101,8 +100,8 @@
     var result = window.IPTVProfileUtils.validateProfile(name.value, url, address);
     if (!result.ok) { alert(result.error); return; }
     if (result.insecure && !confirm('This portal uses unencrypted HTTP. Continue?')) return;
-    if (!/^(?:[a-z0-9_-]+\/)*[a-z0-9_-]+\.php$/i.test(endpoint.value.trim())) { alert('Enter a relative API path, such as portal.php or server/load.php'); return; }
-    var p = result.profile; p.endpoint = endpoint.value.trim();
+    var p = result.profile;
+    if (selected >= 0 && profiles[selected].endpoint) p.endpoint = profiles[selected].endpoint;
     if (!p.name) return;
     if (selected >= 0) profiles[selected] = p; else profiles.push(p);
     persist(); showHome();

@@ -12,7 +12,9 @@ const path = require('node:path');
      open(method,url) { this.url=url; }
      setRequestHeader() {}
      send() {
-       const action=new URL(this.url).searchParams.get('action');
+       const request=new URL(this.url);
+       if(request.pathname !== '/stalker_portal/server/load.php') throw new Error('Incorrect default endpoint');
+       const action=request.searchParams.get('action');
        const js=action==='handshake'?{token:'mock-token'}:action==='get_genres'?[{id:'1',title:'News'}]:action==='get_ordered_list'?{data:[{id:'1',name:'Test channel',cmd:'test'}],total_items:1,max_page_items:1}:{cmd:'https://example.org/live.m3u8'};
        this.status=200;this.responseText=JSON.stringify({js});setTimeout(()=>this.onload(),0);
      }
@@ -23,7 +25,7 @@ const path = require('node:path');
  await page.keyboard.press('Enter');
  await page.locator('#editor:not([hidden])').waitFor();
  // Fields stay read-only while navigating; OK enters editing and IME Done exits it.
- for (const [key, id] of [['ArrowDown','portal'],['ArrowDown','endpoint'],['ArrowDown','mac'],['ArrowUp','endpoint'],['ArrowUp','portal'],['ArrowUp','name']]) {
+ for (const [key, id] of [['ArrowDown','portal'],['ArrowDown','mac'],['ArrowUp','portal'],['ArrowUp','name']]) {
    await page.keyboard.press(key);
    assert.equal(await page.evaluate(()=>document.activeElement.id),id);
    assert.equal(await page.locator('#'+id).evaluate(el=>el.readOnly),true);
@@ -37,11 +39,10 @@ const path = require('node:path');
  assert.equal(await page.locator('#name').evaluate(el=>el.readOnly),true);
  await page.keyboard.press('ArrowDown');
  await page.keyboard.press('Enter');
- await page.locator('#portal').fill('https://example.org/portal');
+ await page.locator('#portal').fill('https://example.org');
  await page.locator('#portal').dispatchEvent('keydown',{keyCode:65385});
  assert.equal(await page.evaluate(()=>document.activeElement.id),'portal');
  assert.equal(await page.locator('#portal').evaluate(el=>el.readOnly),true);
- await page.keyboard.press('ArrowDown');
  await page.keyboard.press('ArrowDown');
  await page.keyboard.press('Enter');
  await page.locator('#mac').fill('00:1A:79:AA:BB:CC');

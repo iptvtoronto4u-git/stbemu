@@ -5,9 +5,13 @@
  function Provider(profile,options){
   options=options||{};
   if(!profile||!/^https?:\/\/[^\s/@?#]+(?:\/[^?#\s]*)?$/i.test(profile.portal||'')||!/^([0-9a-f]{2}:){5}[0-9a-f]{2}$/i.test(profile.mac||''))throw new Error('A valid portal profile is required');
-  var endpoint=profile.endpoint||'portal.php';
+  var base=profile.portal.replace(/\/(?:c\/?)?$/,'');
+  var endpoint=profile.endpoint;
+  // Correct the old New4K root default while preserving other custom endpoints.
+  if(/^https?:\/\/4k1\.new4k\.cc(?::\d+)?$/i.test(base) && endpoint==='portal.php')endpoint=null;
+  if(!endpoint)endpoint=/^https?:\/\/[^/]+$/i.test(base)?'stalker_portal/server/load.php':'server/load.php';
   if(!/^(?:[a-z0-9_-]+\/)*[a-z0-9_-]+\.php$/i.test(endpoint))throw new Error('Use a relative API path such as portal.php or server/load.php');
-  this.url=profile.portal.replace(/\/(?:c\/?)?$/,'')+'/'+endpoint;
+  this.url=base+'/'+endpoint;
   this.mac=profile.mac.toUpperCase();this.token=null;this.generation=0;
   this.transport=options.transport||xhrTransport;
  }
