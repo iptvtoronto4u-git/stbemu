@@ -10,3 +10,8 @@ assert.equal(ready,true);assert.equal(p.state,'READY');assert.equal(p.play(),tru
 let bad;p.open('javascript:alert(1)',()=>{},e=>bad=e);assert.match(bad.message,/HTTP/);
 const missing=new ctx.IPTVTizenPlayer(null);let err;missing.open('https://example.com/live',()=>{},e=>err=e);assert.ok(err);
 console.log('PASS: AVPlay availability, URL validation, prepare/play/pause/stop lifecycle');
+// Late native callbacks must not resurrect stopped or superseded playback.
+let prepares=[];const delayed={...avplay,prepareAsync:(ok,err)=>prepares.push([ok,err])};
+const d=new ctx.IPTVTizenPlayer(delayed);let callbacks=0;
+d.open('https://example.org/one',()=>callbacks++,()=>callbacks++);d.stop();prepares[0][0]();assert.equal(callbacks,0);assert.equal(d.state,'IDLE');
+d.open('https://example.org/two',()=>callbacks++,()=>callbacks++);d.open('https://example.org/three',()=>callbacks++,()=>callbacks++);prepares[1][0]();assert.equal(callbacks,0);prepares[2][0]();assert.equal(callbacks,1);
