@@ -1,0 +1,30 @@
+/* TV-size Chromium smoke test. Not a Samsung Tizen emulator. */
+const {chromium} = require('playwright');
+const assert = require('node:assert/strict');
+const path = require('node:path');
+(async () => {
+ const browser = await chromium.launch({headless:true,args:['--no-sandbox']});
+ const page = await browser.newPage({viewport:{width:1920,height:1080},deviceScaleFactor:1});
+ const errors=[];
+ page.on('pageerror',e=>errors.push(e.message));
+ await page.goto('file://' + path.resolve('smart-tv/shared/index.html'));
+ await page.getByRole('button',{name:/Add portal profile/}).waitFor();
+ await page.keyboard.press('Enter');
+ await page.locator('#editor:not([hidden])').waitFor();
+ await page.locator('#name').fill('Living room');
+ await page.locator('#portal').fill('https://example.org/portal');
+ await page.locator('#mac').fill('00:1A:79:AA:BB:CC');
+ await page.getByRole('button',{name:'Save profile'}).click();
+ await page.getByRole('button',{name:/Check provider support: Living room/}).click();
+ await page.getByRole('status').getByText(/approved Smart TV portal API/).waitFor();
+ await page.reload();
+ await page.getByRole('button',{name:/Check provider support: Living room/}).waitFor();
+ await page.getByRole('button',{name:/Living room/}).first().click();
+ await page.locator('#editor:not([hidden])').waitFor();
+ await page.keyboard.press('Escape');
+ await page.locator('#home:not([hidden])').waitFor();
+ await page.screenshot({path:'dist/tv-1920x1080-smoke.png',fullPage:true});
+ assert.deepEqual(errors,[],'No uncaught browser errors');
+ console.log('PASS: 1080p TV layout, add/save/reload/edit, Escape, provider unavailable messaging');
+ await browser.close();
+})().catch(e=>{console.error(e);process.exit(1)});
