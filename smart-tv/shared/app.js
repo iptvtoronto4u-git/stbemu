@@ -28,17 +28,22 @@
         });
       }; target.appendChild(b); });
       document.getElementById('more').hidden = !result.hasMore;
+      if (target.firstChild) target.firstChild.focus();
+      else status(null, 'No live channels found in this category. Choose another category.');
     });
   }
   document.getElementById('more').onclick = function() { page++; channels(); };
   function connect(profile) {
+    finishEditing(); editor.hidden = true; busy = false;
     if(provider) provider.logout(); connection++; var epoch = connection;
-    try { provider = new window.IPTVPortalProvider(profile); } catch(e) { document.getElementById('status').textContent = e.message; return; }
+    try { provider = new window.IPTVPortalProvider(profile); } catch(e) { showHome(); document.getElementById('status').textContent = e.message; return; }
     home.hidden = true; browser.hidden = false; status(null, 'Connecting…');
     document.getElementById('categories').textContent = ''; document.getElementById('channels').textContent = ''; document.getElementById('more').hidden = true; document.getElementById('disconnect').focus();
     provider.authenticate(function(error) { if(epoch !== connection) return; if(error) { status(error); return; }
       provider.listCategories(function(error, rows) { if(epoch !== connection) return; status(error, 'Choose a category'); if(error) return;
         rows.forEach(function(row) { var b = document.createElement('button'); b.textContent = row.name; b.onclick = function() { category = row.id; page = 1; channels(); }; document.getElementById('categories').appendChild(b); });
+        if (rows.length) { category = rows[0].id; page = 1; status(null, 'Loading live channels…'); channels(); }
+        else status(null, 'The portal returned no live TV categories.');
       });
     });
   }
@@ -82,11 +87,11 @@
       var title = document.createElement('strong'); title.textContent = p.name;
       var details = document.createElement('small'); details.textContent = p.portal + ' • ' + p.mac;
       b.appendChild(title); b.appendChild(details);
-      b.addEventListener('click', function () { edit(i); }); grid.appendChild(b);
-      var test = document.createElement('button'); test.textContent = 'Connect: ' + p.name; test.onclick = function () { connect(p); }; grid.appendChild(test);
+      b.addEventListener('click', function () { connect(p); }); grid.appendChild(b);
+      var settings = document.createElement('button'); settings.textContent = 'Edit: ' + p.name; settings.onclick = function () { edit(i); }; grid.appendChild(settings);
     });
     document.getElementById('status').textContent = profiles.length ?
-      'Profiles saved locally. Select Connect to load your channels.' :
+      'Choose a profile to open live TV.' :
       'Set up an authorized Stalker profile to get started.';
   }
   document.getElementById('add').addEventListener('click', function () { edit(-1); });
@@ -99,12 +104,11 @@
     var url = portal.value.trim(), address = mac.value.trim().toUpperCase();
     var result = window.IPTVProfileUtils.validateProfile(name.value, url, address);
     if (!result.ok) { alert(result.error); return; }
-    if (result.insecure && !confirm('This portal uses unencrypted HTTP. Continue?')) return;
     var p = result.profile;
     if (selected >= 0 && profiles[selected].endpoint) p.endpoint = profiles[selected].endpoint;
     if (!p.name) return;
     if (selected >= 0) profiles[selected] = p; else profiles.push(p);
-    persist(); showHome();
+    persist(); connect(p);
   });
   // TV remotes may report Return as keyCode 10009; use explicit spatial focus
   // navigation so older Tizen WebKit engines do not depend on CSS focus APIs.

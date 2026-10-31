@@ -15,7 +15,9 @@ automatic: host-only URLs use stalker_portal/server/load.php; portal base paths
 profiles with the old portal.php default are corrected automatically at connection
 time. Developer-supplied custom endpoint values remain supported internally for
 other providers. No endpoint probing is performed.
-Select Connect, choose a category, and choose a channel. Next page loads more
+Save and open Live TV saves the three fields, authenticates automatically and loads
+channels from the first category. Selecting a saved profile opens it directly.
+Separate Edit buttons preserve profile editing and deletion. Choose a channel to play. Next page loads more
 channels. Stop returns to the browser; Return stops video first, then disconnects.
 Disconnect and app backgrounding clear the in-memory session.
 
