@@ -10,3 +10,26 @@ assert.equal(ready,true);assert.equal(p.state,'READY');assert.equal(p.play(),tru
 let bad;p.open('javascript:alert(1)',()=>{},e=>bad=e);assert.match(bad.message,/HTTP/);
 const missing=new ctx.IPTVTizenPlayer(null);let err;missing.open('https://example.com/live',()=>{},e=>err=e);assert.ok(err);
 console.log('PASS: AVPlay availability, URL validation, prepare/play/pause/stop lifecycle');
+// Late native callbacks must not resurrect stopped or superseded playback.
+let prepares=[];const delayed={...avplay,prepareAsync:(ok,err)=>prepares.push([ok,err])};
+const d=new ctx.IPTVTizenPlayer(delayed);let callbacks=0;
+d.open('https://example.org/one',()=>callbacks++,()=>callbacks++);d.stop();prepares[0][0]();assert.equal(callbacks,0);assert.equal(d.state,'IDLE');
+d.open('https://example.org/two',()=>callbacks++,()=>callbacks++);d.open('https://example.org/three',()=>callbacks++,()=>callbacks++);prepares[1][0]();assert.equal(callbacks,0);prepares[2][0]();assert.equal(callbacks,1);
+// Subtitles require explicit selection and cannot leak across streams or stop.
+let listener,subtitle='';const silent=[];
+const captions=new ctx.IPTVTizenPlayer({...avplay,setListener:value=>listener=value,setSilentSubtitle:value=>silent.push(value),setSelectTrack:()=>{}});
+captions.onSubtitle=(_,text)=>subtitle=text;
+captions.open('https://example.org/captions',()=>{},e=>{throw e;});captions.play();
+listener.onsubtitlechange(1000,'Hidden by default');assert.equal(subtitle,'');assert.ok(silent.every(Boolean));
+captions.selectTrack('TEXT',0);listener.onsubtitlechange(1000,'Selected captions');assert.equal(subtitle,'Selected captions');
+captions.subtitles(false);assert.equal(subtitle,'');listener.onsubtitlechange(1000,'Late caption');assert.equal(subtitle,'');
+captions.subtitles(true);listener.onsubtitlechange(1000,'Old channel');captions.open('https://example.org/next',()=>{},e=>{throw e;});assert.equal(subtitle,'');assert.equal(captions.subtitlesEnabled,false);
+captions.subtitles(true);listener.onsubtitlechange(1000,'Stopped channel');captions.stop();assert.equal(subtitle,'');listener.onsubtitlechange(1000,'Late stopped caption');assert.equal(subtitle,'');
+console.log('PASS: subtitles off by default, explicit selection, clearing and stale callback suppression');
+const captionCalls=[];ctx.webapis={tvinfo:{registerInAppCaptionControl:active=>captionCalls.push(['control',active]),showCaption:visible=>captionCalls.push(['visible',visible])}};
+captions.open('https://example.org/native-captions',()=>{},e=>{throw e;});captions.play();
+assert.deepEqual(captionCalls,[['control',true],['visible',false],['control',true],['visible',false]]);
+captions.captionControl(false);assert.deepEqual(captionCalls.at(-1),['control',false]);
+ctx.webapis.tvinfo={};assert.equal(captions.captionControl(true),false);
+ctx.webapis.tvinfo={registerInAppCaptionControl:()=>{throw new Error('Unsupported');},showCaption:()=>{throw new Error('Unexpected');}};assert.equal(captions.captionControl(true),false);
+console.log('PASS: native caption visibility, release and unsupported TV fallback');

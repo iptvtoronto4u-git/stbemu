@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<widget xmlns="http://www.w3.org/ns/widgets" xmlns:tizen="http://tizen.org/ns/widgets" id="http://iptvtoronto.example/smarttv" version="0.1.0" viewmodes="maximized">
-  <name>IPTV TORONTO</name><content src="index.html"/>
-  <tizen:application id="IPTVToronto.IPTVToronto" package="IPTVToronto" required_version="2.3"/>
+<widget xmlns="http://www.w3.org/ns/widgets" xmlns:tizen="http://tizen.org/ns/widgets" id="http://iptvtoronto.example/smarttv" version="0.3.0" viewmodes="maximized">
+  <name>IPTV TORONTO</name><icon src="icon.png"/><content src="index.html"/>
+  <tizen:application id="IToronto01.IPTVToronto" package="IToronto01" required_version="2.3"/>
   <tizen:profile name="tv"/>
+  <tizen:metadata key="http://samsung.com/tv/metadata/use.keypad_without_useraction" value="false"/>
   <tizen:privilege name="http://tizen.org/privilege/internet"/>
   <access origin="*" subdomains="true"/>
   <tizen:setting screen-orientation="landscape" context-menu="disable" background-support="disable" encryption="disable" install-location="auto" hwkey-event="enable"/>

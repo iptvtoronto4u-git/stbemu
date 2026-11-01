@@ -5,6 +5,8 @@ on:
     paths:
       - 'smart-tv/**'
       - '.github/workflows/smart-tv-staging.yml'
+  pull_request:
+    paths: ['smart-tv/**', '.github/workflows/smart-tv-staging.yml']
   workflow_dispatch:
 jobs:
   package:
@@ -18,6 +20,10 @@ jobs:
           node-version: '22'
       - name: Validate JavaScript and manifests
         run: |
+          find smart-tv/shared/src -name '*.js' -print0 | xargs -0 -n1 node --check
+          node --check smart-tv/shared/native-transport.js
+          node --check smart-tv/shared/native/portal-worker.js
+          test -s smart-tv/shared/native/portal-http.wasm
           node --check smart-tv/shared/app.js
           node --check smart-tv/shared/profile-utils.js
           node smart-tv/tests/profile-utils.test.js
@@ -44,8 +50,10 @@ jobs:
       - name: Stage Samsung and LG prototypes
         run: |
           mkdir -p dist/samsung dist/lg
-          cp smart-tv/shared/{index.html,style.css,app.js,profile-utils.js,portal-provider.js,portal-diagnostics.js,tizen-player.js} dist/samsung/
-          cp smart-tv/shared/{index.html,style.css,app.js,profile-utils.js,portal-provider.js} dist/lg/
+          cp smart-tv/shared/{icon.png,index.html,style.css,app.js,profile-utils.js,native-transport.js,portal-provider.js,portal-diagnostics.js,tizen-player.js} dist/samsung/
+          cp smart-tv/shared/{icon.png,index.html,style.css,app.js,profile-utils.js,native-transport.js,portal-provider.js,portal-diagnostics.js,tizen-player.js} dist/lg/
+          cp -r smart-tv/shared/{src,assets,icons,native} dist/samsung/
+          cp -r smart-tv/shared/{src,assets,icons,native} dist/lg/
           cp smart-tv/samsung/config.xml smart-tv/samsung/build-and-install.ps1 dist/samsung/
           cp smart-tv/lg/appinfo.json dist/lg/
           (cd dist/samsung && zip -q -r ../IPTV-TORONTO-Tizen-source.zip .)
