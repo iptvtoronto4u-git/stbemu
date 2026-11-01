@@ -19,7 +19,7 @@ function applyAppearance(){const style=document.documentElement.style;style.setP
 applyAppearance();document.title=brand.name;
 document.querySelectorAll('[data-brand]').forEach(n=>n.textContent=brand.name);
 function showError(error){let banner=root.querySelector('.feature-error');if(!banner){banner=el('p','', 'feature-error');banner.setAttribute('role','alert');root.prepend(banner);}banner.textContent=error&&error.message?String(error.message):t('unavailable');}
-function mount(title,render,push=true){if(push&&current)history.push(current);current={title,render};const ticket=++screenVersion;root.hidden=false;root.textContent='';root.className='feature-route';root.append(topNav(/movie|film/i.test(title)?'movies':/series|season|episode/i.test(title)?'series':/setting|playback|network|interface|parental|account|about|data|profile/i.test(title)?'settings':'live'));const head=el('header',undefined,'feature-heading');head.append(button('‹ '+t('back'),back),el('h2',title));root.append(head);const body=el('div',undefined,'feature-body');root.append(body,HintBar());Promise.resolve(render(body,ticket)).catch(e=>{if(ticket===screenVersion)showError(e);});setTimeout(()=>{const first=root.querySelector('button');if(first)first.focus();},0);}
+function mount(title,render,push=true){if(push&&current)history.push(current);current={title,render};const ticket=++screenVersion;root.hidden=false;root.textContent='';root.className='feature-route';root.append(topNav(/movie|film/i.test(title)?'movies':/series|season|episode/i.test(title)?'series':/setting|playback|network|interface|parental|account|about|data|profile/i.test(title)?'settings':'live'));const head=el('header',undefined,'feature-heading');head.append(button('‹ '+t('back'),back),el('h2',title));root.append(head);const body=el('div',undefined,'feature-body');root.append(body,HintBar());Promise.resolve(render(body,ticket)).catch(e=>{if(ticket===screenVersion)showError(e);});setTimeout(()=>{const first=root.querySelector('.app-navigation .selected')||root.querySelector('button');if(first)first.focus();},0);}
 function close(){screenVersion++;root.hidden=true;root.textContent='';history=[];current=null;const n=document.querySelector('#channels .channel-row.current')||document.querySelector('#channels button')||document.getElementById('add');if(n)n.focus();}
 function back(){if(history.length){const previous=history.pop();mount(previous.title,previous.render,false);}else close();}
 function loading(body){const n=el('p',t('loading'),'skeleton');body.append(n);return n;}
@@ -41,7 +41,7 @@ function categories(type){catalog(type,null,1,'');}
 function catalog(type,category,initialPage,query,initialSourceType){
  if(!requireSession())return;
  mount(t(type==='vod'?'movies':'series')+(query?' · '+query:''),async(body,ticket)=>{
-  root.classList.add('catalog-live-route');
+  root.classList.add('catalog-live-route');root.querySelector('.feature-heading').hidden=true;
   const nav=root.querySelector('.app-navigation');Array.from(nav.children).forEach((n,i)=>n.classList.toggle('selected',i===(type==='vod'?2:3)));
   const bar=el('nav',undefined,'category-bar catalog-categories');bar.setAttribute('aria-label','Catalog categories');body.append(bar);
   bar.append(button(t('search'),()=>searchKeyboard(t('search'),q=>catalog(type,category,1,q,sourceType))),button(t('continue'),()=>continueWatching()));
