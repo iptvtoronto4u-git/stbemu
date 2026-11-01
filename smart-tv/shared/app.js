@@ -150,7 +150,8 @@
     player.open(url,function(){if(epoch!==playbackGeneration)return;try{player.play();playingChannel={id:'catalog',name:title};document.body.classList.add('watching');element('preview-title').textContent=title;if(options&&options.position)setTimeout(function(){if(epoch===playbackGeneration)player.seek(options.position);},250);fullscreen(true);status(null,title);}catch(_){status({message:'This TV could not start the selected video.'});}},function(){if(epoch===playbackGeneration)status({message:'The selected video format is unavailable on this TV.'});});
   }
   player.onEvent=function(type,value){document.dispatchEvent(new CustomEvent('iptv:player-event',{detail:{type:type,value:value}}));if(type==='buffering'&&value<100)status(null,'Buffering… '+value+'%');};
-  player.onSubtitle=function(duration,text){var subtitles=element('subtitles');if(subtitles){subtitles.textContent=text;setTimeout(function(){if(subtitles.textContent===text)subtitles.textContent='';},Math.max(0,duration));}};
+  var subtitleTimer=null;
+  player.onSubtitle=function(duration,text){clearTimeout(subtitleTimer);var subtitles=element('subtitles');if(subtitles){subtitles.textContent=text;subtitles.hidden=!text;if(text)subtitleTimer=setTimeout(function(){subtitles.textContent='';subtitles.hidden=true;},Math.max(0,Number(duration)||0));}};
   document.addEventListener('iptv:profiles-updated',function(){try{profiles=JSON.parse(localStorage.getItem(KEY)||'[]');if(!home.hidden)render();}catch(_){}});
   function finishEditing() {
     var field = editingField;

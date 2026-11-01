@@ -15,3 +15,14 @@ let prepares=[];const delayed={...avplay,prepareAsync:(ok,err)=>prepares.push([o
 const d=new ctx.IPTVTizenPlayer(delayed);let callbacks=0;
 d.open('https://example.org/one',()=>callbacks++,()=>callbacks++);d.stop();prepares[0][0]();assert.equal(callbacks,0);assert.equal(d.state,'IDLE');
 d.open('https://example.org/two',()=>callbacks++,()=>callbacks++);d.open('https://example.org/three',()=>callbacks++,()=>callbacks++);prepares[1][0]();assert.equal(callbacks,0);prepares[2][0]();assert.equal(callbacks,1);
+// Subtitles require explicit selection and cannot leak across streams or stop.
+let listener,subtitle='';const silent=[];
+const captions=new ctx.IPTVTizenPlayer({...avplay,setListener:value=>listener=value,setSilentSubtitle:value=>silent.push(value),setSelectTrack:()=>{}});
+captions.onSubtitle=(_,text)=>subtitle=text;
+captions.open('https://example.org/captions',()=>{},e=>{throw e;});captions.play();
+listener.onsubtitlechange(1000,'Hidden by default');assert.equal(subtitle,'');assert.ok(silent.every(Boolean));
+captions.selectTrack('TEXT',0);listener.onsubtitlechange(1000,'Selected captions');assert.equal(subtitle,'Selected captions');
+captions.subtitles(false);assert.equal(subtitle,'');listener.onsubtitlechange(1000,'Late caption');assert.equal(subtitle,'');
+captions.subtitles(true);listener.onsubtitlechange(1000,'Old channel');captions.open('https://example.org/next',()=>{},e=>{throw e;});assert.equal(subtitle,'');assert.equal(captions.subtitlesEnabled,false);
+captions.subtitles(true);listener.onsubtitlechange(1000,'Stopped channel');captions.stop();assert.equal(subtitle,'');listener.onsubtitlechange(1000,'Late stopped caption');assert.equal(subtitle,'');
+console.log('PASS: subtitles off by default, explicit selection, clearing and stale callback suppression');
