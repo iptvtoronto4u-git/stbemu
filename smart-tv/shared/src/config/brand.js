@@ -1,0 +1,1 @@
+export default Object.freeze({name:'IPTV Toronto',tagline:'Your city. Your channels.',primary:'#0879d3',accent:'#14d7ff',background:'#040a1e',logo:'assets/brand/lockup.svg',hero:'assets/brand/skyline.png',icons:{small:'icon.png',medium:'icons/icon-256.png',large:'icons/icon-512.png'},version:'0.2.0'});

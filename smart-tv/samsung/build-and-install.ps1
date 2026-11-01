@@ -3,8 +3,7 @@ param(
  [string]$TizenStudio = "C:\tizen-studio",
  [string]$DeviceName = "",
  [string]$DeviceSerial = "",
- [switch]$Launch,
- [string]$RelayConfigPath = ""
+ [switch]$Launch
 )
 $ErrorActionPreference = "Stop"
 $tizen = Join-Path $TizenStudio "tools\ide\bin\tizen.bat"
@@ -20,7 +19,8 @@ if (!$application -or $application.GetAttribute("package") -cnotmatch '^[A-Za-z0
 # Checkout assets are in shared; staging ZIP assets are beside this script.
 $assets = Join-Path (Split-Path -Parent $source) "shared"
 if (!(Test-Path -LiteralPath (Join-Path $assets "index.html"))) { $assets = $source }
-$files = @("icon.png", "index.html", "style.css", "app.js", "profile-utils.js", "relay-config.js", "portal-provider.js", "portal-diagnostics.js", "tizen-player.js")
+$files = @("icon.png", "index.html", "style.css", "app.js", "profile-utils.js", "native-transport.js", "portal-provider.js", "portal-diagnostics.js", "tizen-player.js")
+$directories = @("src", "assets", "icons", "native")
 foreach ($file in $files) {
  if (!(Test-Path -LiteralPath (Join-Path $assets $file))) { throw "Missing app asset: $file" }
 }
@@ -31,11 +31,10 @@ $build = Join-Path $job "output"
 New-Item -ItemType Directory -Path $stage -Force | Out-Null
 Copy-Item -LiteralPath (Join-Path $source "config.xml") -Destination $stage
 foreach ($file in $files) { Copy-Item -LiteralPath (Join-Path $assets $file) -Destination $stage }
-if ($RelayConfigPath) {
- $relay = Get-Content -LiteralPath $RelayConfigPath -Raw | ConvertFrom-Json
- if ($relay.key -notmatch '^[a-f0-9]{64}$' -or $relay.bindAddress -notmatch '^192\.168\.\d{1,3}\.\d{1,3}$' -or $relay.port -lt 1024 -or $relay.port -gt 65535) { throw "Invalid local connection helper configuration." }
- $privateConfig = @{url=("http://" + $relay.bindAddress + ":" + $relay.port + "/portal");key=$relay.key} | ConvertTo-Json -Compress
- [IO.File]::WriteAllText((Join-Path $stage "relay-config.js"), "window.IPTVRelayConfig = " + $privateConfig + ";")
+foreach ($directory in $directories) {
+ $assetDirectory = Join-Path $assets $directory
+ if (!(Test-Path -LiteralPath $assetDirectory -PathType Container)) { throw "Missing app directory: $directory" }
+ Copy-Item -LiteralPath $assetDirectory -Destination $stage -Recurse
 }
 Write-Host "Building IPTV TORONTO Samsung TV prototype..."
 & $tizen build-web -out $build -- $stage

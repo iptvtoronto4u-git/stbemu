@@ -24,10 +24,10 @@ for(const [portal,endpoint,expected] of [
  ['https://example.org/stalker_portal/c/',undefined,'https://example.org/stalker_portal/server/load.php'],
  ['https://example.org/custom/',undefined,'https://example.org/custom/server/load.php'],
  ['https://example.org','portal.php','https://example.org/portal.php'],
- ['http://4k1.new4k.cc','portal.php','http://4k1.new4k.cc/stalker_portal/server/load.php'],
- ['http://4k1.new4k.cc/',undefined,'http://4k1.new4k.cc/stalker_portal/server/load.php']
-])assert.equal(new P({...profile,portal,endpoint}).url,expected);
-console.log('PASS: automatic Stalker defaults, base paths, custom overrides and legacy New4K profile');
+ ['http://legacy.example.org','portal.php','http://legacy.example.org/stalker_portal/server/load.php'],
+ ['http://legacy.example.org/',undefined,'http://legacy.example.org/stalker_portal/server/load.php']
+])assert.equal(new P({...profile,portal,endpoint,endpointExplicit:portal==='https://example.org'}).url,expected);
+console.log('PASS: automatic Stalker defaults, base paths, custom overrides and legacy portal profile');
 
 // Authentication must initialize the profile before reporting success.
 let initRequests=[],initPending,initComplete=false;
@@ -38,10 +38,8 @@ const denied=new P(profile,{transport:(req,cb)=>cb(null,{status:200,body:req.url
 denied.authenticate(receive);assert.equal(error.code,'AUTH');assert.equal(denied.token,null);
 const odd=new P(profile,{transport:(_,cb)=>cb(null,{status:200,body:'<html>private</html>'})});odd.authenticate(receive);assert.match(error.message,/sign-in/);assert.ok(!error.message.includes('private'));
 console.log('PASS: account initialization, no firmware identity, setup failure and stage-specific errors');
-// Paired TV transport sends only safe browser headers; upstream cookies stay in the helper.
-const relayCalls=[];let relayFail=false;
-ctx.IPTVRelayConfig={url:'http://192.168.1.2:18765/portal',key:'pair-key'};
-ctx.XMLHttpRequest=function(){this.headers={};this.open=(method,url)=>{this.method=method;this.url=url;};this.setRequestHeader=(key,value)=>{this.headers[key]=value;};this.send=body=>{const request=JSON.parse(body);relayCalls.push({method:this.method,url:this.url,headers:this.headers,request});this.status=relayFail?401:200;this.responseText=JSON.stringify({status:200,body:JSON.stringify({js:request.url.includes('action=handshake')?{token:'upstream-token'}:{}})});this.onload();};};
-const paired=new P(profile);paired.authenticate(receive);assert.equal(error,null);assert.equal(relayCalls.length,2);assert.equal(relayCalls[0].method,'POST');assert.equal(relayCalls[0].headers.Cookie,undefined);assert.equal(relayCalls[0].headers.Authorization,'Bearer pair-key');assert.equal(relayCalls[1].request.token,'upstream-token');assert.ok(!relayCalls[1].url.includes('upstream-token'));assert.equal(relayCalls[0].request.mac,profile.mac);
-relayFail=true;paired.authenticate(receive);assert.equal(error.code,'RELAY');assert.equal(paired.token,null);
-console.log('PASS: paired browser transport, upstream cookie isolation and helper authentication errors');
+// On-TV builds select the direct native transport, without any relay config.
+let directCalls=[];ctx.tizen={};ctx.IPTVNativeTransport=(req,cb)=>{directCalls.push(req);cb(null,{status:200,body:JSON.stringify({js:req.url.includes('handshake')?{token:'native-token'}:{}})});};
+const direct=new P(profile);direct.authenticate(receive);assert.equal(error,null);assert.equal(directCalls.length,2);assert.match(directCalls[0].cookie,/mac=/);assert.equal(directCalls[1].headers.Authorization,'Bearer native-token');
+answers.push([{name:'Actual programme',time:'12:00'}]);p.token='test';p.listProgramme({id:'2'},receive);assert.equal(result[0].name,'Actual programme');
+console.log('PASS: direct TV transport selection and provider programme guide parsing');

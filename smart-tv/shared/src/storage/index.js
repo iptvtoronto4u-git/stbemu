@@ -1,0 +1,3 @@
+/** Small JSON storage boundary. Never store portal session tokens or resolved URLs. */
+export const storage={get(key,fallback){try{const value=JSON.parse(localStorage.getItem(key));return value===null?fallback:value;}catch(_){return fallback;}},set(key,value){localStorage.setItem(key,JSON.stringify(value));},remove(key){localStorage.removeItem(key);}};
+export class LRU {constructor(limit=100){this.limit=limit;this.data=new Map();}get(key){if(!this.data.has(key))return undefined;const value=this.data.get(key);this.data.delete(key);this.data.set(key,value);return value;}set(key,value){this.data.delete(key);this.data.set(key,value);while(this.data.size>this.limit)this.data.delete(this.data.keys().next().value);}clear(){this.data.clear();}}

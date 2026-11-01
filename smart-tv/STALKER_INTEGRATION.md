@@ -1,78 +1,32 @@
-# Stalker integration and Samsung update
+# Authorized Stalker integration
 
-This app implements a limited, configurable Stalker API client: `stb/handshake`, basic `stb/get_profile` initialization,
-`itv/get_genres`, paginated `itv/get_ordered_list`, and `itv/create_link`.
-It sends the registered MAC as a cookie and the session token as a Bearer header.
-It does not claim MAG firmware identity, generate device IDs/signatures, perform
-DRM operations, or supply firmware/device identity for device-bound authentication.
-A successful STBEmu subscription does not establish Samsung client compatibility.
+Users enter Profile name, Portal URL and registered MAC on one shared profile
+screen. Selecting a saved profile fills that form. Saving persists it and opens
+Live TV after connecting. Startup tries the active saved profile behind progress;
+missing profiles and failed connections return to the same form.
 
-## Profile setup
+The provider initializes `stb/handshake` followed by basic `stb/get_profile`, then
+loads categories/channels and resolves playback links. Optional portal APIs supply
+EPG, favourites, account information, movies and series. Support depends on each
+portal. Defaults do not claim MAG firmware. Advanced identity/header overrides
+require provider-approved values; the client does not bypass authorization or DRM.
 
-Users enter only a profile name, portal URL and registered MAC. The API path is
-automatic: host-only URLs use stalker_portal/server/load.php; portal base paths
-(including a trailing /c/) use server/load.php beneath that base. Existing New4K
-profiles with the old portal.php default are corrected automatically at connection
-time. Developer-supplied custom endpoint values remain supported internally for
-other providers. No endpoint probing is performed. After handshake, basic account initialization runs before categories load.
-Save and open Live TV saves the three fields, authenticates automatically and loads
-channels from the first category. Selecting a saved profile opens it directly.
-Separate Edit buttons preserve profile editing and deletion. Choose a channel to play. Next page loads more
-channels. Stop returns to the browser; Return stops video first, then disconnects.
-Disconnect and app backgrounding clear the in-memory session.
+Host-only portal URLs default to `stalker_portal/server/load.php`; portal base paths
+use `server/load.php` beneath that base. A bounded handshake fallback handles
+missing/unsupported endpoint responses. The successful endpoint is cached locally.
+The token stays in memory, is cleared on logout, and is never put in profile storage.
+Resolved playback URLs are not persisted. Error messages omit raw portal payloads.
 
-Tokens and resolved stream URLs are never saved in localStorage or logged.
-Profile name, portal, API path and MAC remain local, as in the existing manager.
-HTTP transmits session data without encryption; prefer provider-supported HTTPS.
-Failures show fixed messages, not raw portal payloads or signed stream URLs.
-Reconnect after authorization expires; there are no hidden retry loops.
+Samsung browser JavaScript cannot set the registered MAC Cookie header. On supported
+Tizen TVs the bundled worker uses Samsung Tizen Sockets with native cURL instead.
+Direct authentication, categories, channel retrieval and stream-link resolution were
+verified on a Q60D with the PC helper stopped. Browser transport remains a fallback
+for compatible services. No helper endpoint or pairing key is packaged.
 
-## Compatibility limits
+HTTPS verifies certificates and hostnames using the embedded CA store. HTTP portals
+send details unencrypted. Redirects are disabled in the native client. Requests have
+bounded timeouts and response size. Review pinned SDK dependencies before release.
 
-The web runtime must allow MAC cookies, credentialed CORS and Authorization
-headers for the provider origin. Standard Chromium may silently discard the
-forbidden Cookie header; this implementation cannot override browser policy.
-If the Q60D does this too, a provider-supported cookie/session transport or a
-separately secured, authorized relay is required. The Q60D was confirmed to block
-this Cookie header. A paired Windows test helper is now included; see
-[relay/README.md](relay/README.md). The PC must stay on while testing.
-Network, cookie and CORS failures may be indistinguishable to JavaScript.
-A token alone does not prove that a MAC cookie was delivered or access granted.
-No device fingerprint, firmware impersonation, CORS bypass or DRM workaround
-will be attempted. Unsupported portal authentication must be resolved with the
-provider. AVPlay accepts only direct HTTP(S) URLs returned by create_link;
-commands, localhost placeholders and unsupported schemes are rejected.
-Streams needing extra headers, codecs or DRM are not guaranteed to play.
-
-## Build and update the Q60D
-
-Run from the repository root in Windows PowerShell with the existing Samsung
-certificate installed locally (never copy certificates/passwords to GitHub):
-
-```powershell
-& C:\tizen-studio\tools\sdb.exe connect 192.168.68.56:26101
-& C:\tizen-studio\tools\sdb.exe devices
-.\smart-tv\samsung\build-and-install.ps1 -CertificateProfile IPTV_TORONTO_TV -DeviceSerial 192.168.68.56:26101 -Launch
-```
-
-Use the exact serial reported by `sdb devices` if it differs. The helper stages
-fresh assets, signs a WGT and installs with the existing application ID, retaining
-local profiles. It does not uninstall first. Keep the prior signed WGT for rollback;
-reinstall it if needed. Certificate/DUID permission and TV Developer Mode must
-already be valid. CI provides source ZIPs, not signed installable WGTs.
-
-On TV verify: saved profiles survive; the API path is automatic; Connect shows either
-categories or an actionable error; pagination changes channels; channel playback
-is visible; switching during preparation does not start the previous stream;
-Stop/Return work; reconnect succeeds; backgrounding clears the session. Record
-only error codes/messages, never tokens, cookies or complete signed URLs.
-
-## Validation
-
-Run the commands in `.github/workflows/smart-tv-staging.yml`. CI validates syntax,
-unit tests and manifests, runs a 1920x1080 Chromium smoke test, then stages ZIPs.
-Mock tests verify protocol handling, not New4K or Samsung compatibility. Hardware
-playback and real provider authentication are separate acceptance checks.
-
-Protocol reference: https://github.com/iptvhakr/stalker_portal/blob/master/server/load.php
-(the server dispatcher routes type/action; provider variants can differ).
+See [UPDATE-0.2.md](UPDATE-0.2.md) for build and test status. Compatibility with other
+portal implementations, device-bound authentication and protected streams is not
+assumed. The full 0.2 interface still needs a fresh physical-TV installation check.
