@@ -26,3 +26,10 @@ captions.subtitles(false);assert.equal(subtitle,'');listener.onsubtitlechange(10
 captions.subtitles(true);listener.onsubtitlechange(1000,'Old channel');captions.open('https://example.org/next',()=>{},e=>{throw e;});assert.equal(subtitle,'');assert.equal(captions.subtitlesEnabled,false);
 captions.subtitles(true);listener.onsubtitlechange(1000,'Stopped channel');captions.stop();assert.equal(subtitle,'');listener.onsubtitlechange(1000,'Late stopped caption');assert.equal(subtitle,'');
 console.log('PASS: subtitles off by default, explicit selection, clearing and stale callback suppression');
+const captionCalls=[];ctx.webapis={tvinfo:{registerInAppCaptionControl:active=>captionCalls.push(['control',active]),showCaption:visible=>captionCalls.push(['visible',visible])}};
+captions.open('https://example.org/native-captions',()=>{},e=>{throw e;});captions.play();
+assert.deepEqual(captionCalls,[['control',true],['visible',false],['control',true],['visible',false]]);
+captions.captionControl(false);assert.deepEqual(captionCalls.at(-1),['control',false]);
+ctx.webapis.tvinfo={};assert.equal(captions.captionControl(true),false);
+ctx.webapis.tvinfo={registerInAppCaptionControl:()=>{throw new Error('Unsupported');},showCaption:()=>{throw new Error('Unexpected');}};assert.equal(captions.captionControl(true),false);
+console.log('PASS: native caption visibility, release and unsupported TV fallback');

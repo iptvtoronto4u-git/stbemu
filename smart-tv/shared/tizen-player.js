@@ -3,9 +3,16 @@
  'use strict';
  function Player(avplay){this.api=avplay||(root.webapis&&root.webapis.avplay);this.state='IDLE';this.generation=0;this.subtitlesEnabled=false;}
  Player.prototype.supported=function(){return !!(this.api&&this.api.open&&this.api.prepareAsync&&this.api.play);};
+ // Broadcast closed captions use TVInfo, independently of AVPlay text subtitles.
+ // This controls visibility inside this app; it never changes the TV menu preference.
+ Player.prototype.captionControl=function(active){
+  var info=root.webapis&&root.webapis.tvinfo;if(!info)return false;
+  try{if(!info.registerInAppCaptionControl||!info.showCaption)return false;info.registerInAppCaptionControl(!!active);if(active)info.showCaption(false);return true;}catch(_){return false;}
+ };
  Player.prototype.open=function(url,onReady,onError){
   var self=this,epoch=++this.generation;
   this.subtitlesEnabled=false;if(this.onSubtitle)this.onSubtitle(0,'');
+  this.captionControl(true);
   if(!this.supported()){onError(new Error('Samsung AVPlay is unavailable in this environment'));return;}
   if(!/^https?:\/\//i.test(url||'')){onError(new Error('Authorized HTTP(S) stream URL required'));return;}
   try{
@@ -27,7 +34,7 @@
   }catch(e){this.state='ERROR';onError(new Error('AVPlay could not open the stream'));}
  };
  Player.prototype.setDisplayRect=function(x,y,width,height){this.rect=[x,y,width,height];if(this.state!=='IDLE'&&this.api&&this.api.setDisplayRect)this.api.setDisplayRect(x,y,width,height);};
- Player.prototype.play=function(){if(!this.supported()||(this.state!=='READY'&&this.state!=='PAUSED'))return false;this.api.play();this.state='PLAYING';try{if(this.api.setSilentSubtitle)this.api.setSilentSubtitle(true);}catch(_){}return true;};
+ Player.prototype.play=function(){if(!this.supported()||(this.state!=='READY'&&this.state!=='PAUSED'))return false;this.api.play();this.state='PLAYING';this.captionControl(true);try{if(this.api.setSilentSubtitle)this.api.setSilentSubtitle(true);}catch(_){}return true;};
  Player.prototype.pause=function(){if(this.state!=='PLAYING')return false;this.api.pause();this.state='PAUSED';return true;};
  Player.prototype.seek=function(ms){if(this.api&&this.api.seekTo&&this.state!=='IDLE')this.api.seekTo(Math.max(0,ms));};
  Player.prototype.jump=function(ms){this.seek(this.position()+ms);};

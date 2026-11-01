@@ -301,8 +301,11 @@
     if (best) { best.focus(); }
     event.preventDefault();
   });
+  player.captionControl(true);
+  window.addEventListener('pagehide',function(){player.captionControl(false);});
   var resumeProfile=null;
   document.addEventListener('visibilitychange', function () {
+    player.captionControl(!document.hidden);
     if(document.hidden && activeProfile){resumeProfile=activeProfile;disconnect();}
     else if(!document.hidden && resumeProfile){var savedProfile=resumeProfile;resumeProfile=null;connect(savedProfile);}
   });
