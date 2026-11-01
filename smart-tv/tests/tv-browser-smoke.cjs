@@ -11,7 +11,7 @@ const path = require('node:path'),fs=require('node:fs'),http=require('node:http'
  const errors=[];
  page.on('pageerror',e=>errors.push(e.message));
  await page.addInitScript(() => {
-   window.failHandshake=new URL(location.href).searchParams.has('offline');
+   window.catalogRequests=[];window.failHandshake=new URL(location.href).searchParams.has('offline');
    window.webapis={avplay:{open(){},setDisplayRect(x,y,width,height){window.lastVideoRect={x,y,width,height};},setListener(value){window.playerListeners=value;},getCurrentTime(){return window.testPosition||0;},getDuration(){return 600000;},seekTo(value){window.testPosition=value;},getTotalTrackInfo(){return [{type:'AUDIO',index:0}];},setSelectTrack(){},setSilentSubtitle(){},setDisplayMethod(){},prepareAsync(ok,error){setTimeout(()=>window.failPrepare?error():ok(),10);},play(){},pause(){},stop(){},close(){}}};
    window.XMLHttpRequest = class {
      open(method,url) { this.url=url; }
@@ -21,7 +21,7 @@ const path = require('node:path'),fs=require('node:fs'),http=require('node:http'
        if(request.pathname !== '/stalker_portal/server/load.php') throw new Error('Incorrect default endpoint');
        const action=request.searchParams.get('action');
        if(action==='handshake' && window.failHandshake) { this.status=403;this.responseText='';setTimeout(()=>this.onload(),40);return; }
-       const type=request.searchParams.get('type');
+       const type=request.searchParams.get('type');if(action==='get_ordered_list'&&(type==='vod'||type==='series'))window.catalogRequests.push({type,search:request.searchParams.get('search'),category:request.searchParams.get('category')});
        const channels=[{id:'1',number:'1000',name:'Test channel',cmd:'test'},...['City News','Weather Network','World News','Documentaries','Live Sports','Movies','Arts & Culture','Family','Music','Travel','Business','Local TV'].map((name,i)=>({id:String(i+2),number:String(1002+i*2),name,cmd:'test'}))];
        let js={};
        if(action==='handshake')js={token:'mock-token'};
@@ -66,12 +66,12 @@ const path = require('node:path'),fs=require('node:fs'),http=require('node:http'
  await page.locator('.live-header .app-navigation').getByRole('button',{name:'Movies',exact:true}).click();
  await page.locator('#feature-screen').getByRole('button',{name:'Featured',exact:true}).click();
  assert.equal(await page.getByRole('button',{name:'English Series',exact:true}).count(),0);await page.locator('.catalog-preview h2').getByText('Test film',{exact:true}).waitFor();await page.waitForFunction(()=>document.querySelector('.catalog-art img')?.naturalWidth>0);await page.screenshot({path:'dist/tv-movies.png',fullPage:true});
- await page.locator('.catalog-title-row').getByText('Test film',{exact:true}).click();
+ await page.getByRole('textbox',{name:'Search movies',exact:true}).click();await page.getByRole('textbox',{name:'Search movies',exact:true}).fill('No such film');assert.equal(await page.locator('.catalog-title-row:visible').count(),0);await page.getByRole('textbox',{name:'Search movies',exact:true}).fill('Test');await page.getByRole('button',{name:'Search titles',exact:true}).click();await page.locator('.catalog-preview h2').getByText('Test film',{exact:true}).waitFor();assert.equal(await page.evaluate(()=>window.catalogRequests.at(-1).search),'Test');await page.getByRole('button',{name:'Clear search',exact:true}).click();await page.locator('.catalog-title-row').getByText('Test film',{exact:true}).click();
  await page.locator('#feature-screen').getByRole('button',{name:'Play',exact:true}).click();await page.locator('body.fullscreen').waitFor();await page.keyboard.press('Escape');
  await page.locator('.live-header .app-navigation').getByRole('button',{name:'Series',exact:true}).click();
  await page.locator('#feature-screen').getByRole('button',{name:'Featured',exact:true}).click();
  await page.getByRole('button',{name:'English Series',exact:true}).click();await page.getByRole('button',{name:/Moved series/}).first().waitFor();await page.getByRole('button',{name:'Featured',exact:true}).click();await page.locator('.catalog-preview h2').getByText('Test series',{exact:true}).waitFor();await page.screenshot({path:'dist/tv-series.png',fullPage:true});
- await page.locator('.catalog-title-row').getByText('Test series',{exact:true}).click();await page.getByRole('button',{name:'Seasons and episodes',exact:true}).click();await page.getByRole('button',{name:'Episode 1',exact:true}).click();
+ await page.getByRole('textbox',{name:'Search series',exact:true}).click();await page.getByRole('textbox',{name:'Search series',exact:true}).fill('Test');await page.getByRole('button',{name:'Search titles',exact:true}).click();await page.locator('.catalog-preview h2').getByText('Test series',{exact:true}).waitFor();assert.deepEqual(await page.evaluate(()=>({type:window.catalogRequests.at(-1).type,search:window.catalogRequests.at(-1).search})),{type:'series',search:'Test'});await page.locator('.catalog-title-row').getByText('Test series',{exact:true}).click();await page.getByRole('button',{name:'Seasons and episodes',exact:true}).click();await page.getByRole('button',{name:'Episode 1',exact:true}).click();
  await page.locator('#feature-screen').getByRole('button',{name:'Play',exact:true}).click();await page.locator('body.fullscreen').waitFor();await page.evaluate(()=>window.playerListeners.onstreamcompleted());await page.waitForFunction(()=>document.getElementById('preview-title').textContent.includes('Episode 2'));await page.keyboard.press('Escape');
  await page.locator('.live-header .app-navigation').getByRole('button',{name:'Home',exact:true}).click();await page.locator('.home-hero').waitFor();await page.screenshot({path:'dist/tv-home.png',fullPage:true});await page.locator('#feature-screen .app-navigation').getByRole('button',{name:'Live TV',exact:true}).click();
  await page.locator('.live-header .app-navigation').getByRole('button',{name:'Settings',exact:true}).click();await page.getByRole('button',{name:'Portal and account',exact:true}).click();await page.locator('#feature-screen').getByText('tariff_plan: Test account',{exact:true}).waitFor();await page.keyboard.press('Escape');await page.keyboard.press('Escape');
