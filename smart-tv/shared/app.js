@@ -25,6 +25,9 @@
     var key = favoriteKey(selectedChannel); if (favorites[key]) delete favorites[key]; else favorites[key] = true;
     try { localStorage.setItem(KEY + '.favorites', JSON.stringify(favorites)); } catch (_) { status({message:'Could not save this favorite on the TV.'}); }
     renderChannels(false);
+    element('favorite').lastChild.textContent=favorites[key]?'Remove favorite':'Favorite';
+    element('favorite').setAttribute('aria-pressed',String(!!favorites[key]));
+    status(null,favorites[key]?'Added to Favorites':'Removed from Favorites');
     if(owner && owner.favoriteIds)owner.favoriteIds(function(error,ids){if(error || owner!==provider)return;var desired=!!favorites[key];ids=ids.filter(function(id){return id!==channel.id;});if(desired)ids.push(channel.id);owner.setFavoriteIds(ids,function(){});});
   }
   function updateRectangle() {
@@ -92,7 +95,7 @@
   function renderChannels(focusFirst) {
     var target=element('channels'), focusedId=selectedChannel && selectedChannel.id;
     var hadFocus=target.contains(document.activeElement); target.textContent='';
-    var rows=channelRows.filter(function(row){return !activeProfile.hiddenChannels || activeProfile.hiddenChannels.indexOf(row.id)<0;}).sort(function(a,b) { return alphabetical ? a.name.localeCompare(b.name) : (Number(a.number)||0)-(Number(b.number)||0); });
+    var rows=channelRows.filter(function(row){return (category!=='__favorites'||favorites[favoriteKey(row)])&&(!activeProfile.hiddenChannels || activeProfile.hiddenChannels.indexOf(row.id)<0);}).sort(function(a,b) { return alphabetical ? a.name.localeCompare(b.name) : (Number(a.number)||0)-(Number(b.number)||0); });
     rows.forEach(function(channel) {
       var button=document.createElement('button'); button.className='channel-row' + (playingChannel && playingChannel.id===channel.id?' current':''); button.setAttribute('aria-label',channel.name); button.setAttribute('data-channel-id',channel.id);
       var number=document.createElement('span'); number.className='channel-number'; number.textContent=channel.number;
