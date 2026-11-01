@@ -90,12 +90,17 @@
       }, function() { if(epoch !== playbackGeneration)return;var limit=activeProfile&&typeof activeProfile.retryCount==='number'?activeProfile.retryCount:1;if(attempt<limit){status(null,'Retrying the channel…');setTimeout(function(){if(epoch===playbackGeneration&&provider)playChannel(channel,true,attempt+1);},700);}else status({message:'AVPlay could not prepare this stream. Format or provider requirements may be unsupported.'}); });
     });
   }
-  var hasMoreChannels=false;
+  var hasMoreChannels=false,liveQuery='',liveFavoritesOnly=false;
+  var liveTools=document.createElement('div');liveTools.className='catalog-search live-list-tools';liveTools.innerHTML='<button id="live-categories-back">‹ Categories</button><label>Search channels<input id="live-search" placeholder="Search this category" aria-label="Search channels"></label><button id="live-favorites-filter" aria-pressed="false">☆ Favourites</button>';element('browser').appendChild(liveTools);element('categories').hidden=true;
+  element('live-categories-back').onclick=element('category-focus').onclick=function(){document.dispatchEvent(new CustomEvent('iptv:live-categories'));};
+  element('live-search').oninput=function(){liveQuery=this.value.trim().toLowerCase();renderChannels(false);if(hasMoreChannels)loadMoreChannels();};
+  element('live-favorites-filter').onclick=function(){liveFavoritesOnly=!liveFavoritesOnly;this.setAttribute('aria-pressed',String(liveFavoritesOnly));renderChannels(false);if(hasMoreChannels)loadMoreChannels();};
+  document.addEventListener('iptv:choose-category',function(event){chooseCategory(event.detail);});
   function loadMoreChannels(){if(!busy&&hasMoreChannels)channels(true);}
   function renderChannels(focusFirst) {
     var target=element('channels'), focusedId=selectedChannel && selectedChannel.id;
     var hadFocus=target.contains(document.activeElement); target.textContent='';
-    var rows=channelRows.filter(function(row){return (category!=='__favorites'||favorites[favoriteKey(row)])&&(!activeProfile.hiddenChannels || activeProfile.hiddenChannels.indexOf(row.id)<0);}).sort(function(a,b) { return alphabetical ? a.name.localeCompare(b.name) : (Number(a.number)||0)-(Number(b.number)||0); });
+    var rows=channelRows.filter(function(row){return (!liveFavoritesOnly||favorites[favoriteKey(row)])&&(!liveQuery||row.name.toLowerCase().indexOf(liveQuery)>=0)&&(category!=='__favorites'||favorites[favoriteKey(row)])&&(!activeProfile.hiddenChannels || activeProfile.hiddenChannels.indexOf(row.id)<0);}).sort(function(a,b) { return alphabetical ? a.name.localeCompare(b.name) : (Number(a.number)||0)-(Number(b.number)||0); });
     rows.forEach(function(channel) {
       var button=document.createElement('button'); button.className='channel-row' + (playingChannel && playingChannel.id===channel.id?' current':''); button.setAttribute('aria-label',channel.name); button.setAttribute('data-channel-id',channel.id);
       var number=document.createElement('span'); number.className='channel-number'; number.textContent=channel.number;
@@ -115,7 +120,7 @@
     var epoch=connection,request=++listGeneration;busy=true;element('channels').setAttribute('aria-busy','true');status(null,'Loading live channels…');
     function complete(error,result){
       if(epoch!==connection || request!==listGeneration)return;busy=false;element('channels').removeAttribute('aria-busy');
-      if(error){if(connecting)connectionFailed(error);else status(error);return;}page=requestedPage;hasMoreChannels=!!result.hasMore&&result.channels.length>0;var existing=append?channelRows:[];channelRows=existing.concat(result.channels.filter(function(row){return !existing.some(function(old){return old.id===row.id;});}));connectionReady();renderChannels(!append);
+      if(error){if(connecting)connectionFailed(error);else status(error);return;}page=requestedPage;hasMoreChannels=!!result.hasMore&&result.channels.length>0;var existing=append?channelRows:[];channelRows=existing.concat(result.channels.filter(function(row){return !existing.some(function(old){return old.id===row.id;});}));connectionReady();renderChannels(!append&&!liveQuery&&!liveFavoritesOnly);if((liveQuery||liveFavoritesOnly)&&hasMoreChannels)setTimeout(loadMoreChannels,0);
       status(null,channelRows.length?'↑ ↓ Browse channels · OK Preview · OK again for fullscreen':'No live channels in this category. Choose another category.');
     }
     if(category==='__all'||category==='__favorites'){
@@ -126,7 +131,7 @@
   element('channels').onscroll=function(){var list=element('channels');if(list.scrollTop>0&&list.scrollTop+list.clientHeight>=list.scrollHeight-100)loadMoreChannels();};
   function chooseCategory(row,authorized) {
     if(!authorized && window.IPTVFeatures){window.IPTVFeatures.authorize('',row.id).then(function(ok){if(ok && provider)chooseCategory(row,true);});return;}
-    category=row.id; page=1;hasMoreChannels=false;channelRows=[];element('channels').scrollTop=0; element('category-title').textContent=row.name;
+    liveQuery='';liveFavoritesOnly=false;element('live-search').value='';element('live-favorites-filter').setAttribute('aria-pressed','false');category=row.id; page=1;hasMoreChannels=false;channelRows=[];element('channels').scrollTop=0; element('category-title').textContent=row.name;
     Array.prototype.forEach.call(element('categories').children,function(b){b.classList.toggle('active',b.getAttribute('data-category-id')===row.id);}); channels();
   }
   function connect(profile) {
@@ -138,10 +143,10 @@
     element('categories').textContent='';element('channels').textContent='';hasMoreChannels=false;status(null,'Connecting to your portal…');element('disconnect').focus();
     player.options=profile;
     provider.authenticate(function(error){if(epoch!==connection)return;if(error){connectionFailed(error);return;}progress(55,'Loading your channel categories…');
-      document.dispatchEvent(new CustomEvent('iptv:session',{detail:{provider:provider,profile:profile,player:player,channels:function(){return channelRows.slice();},selected:function(){return selectedChannel;},category:function(){return category;},playChannel:playChannel,playURL:playURL,watchLast:function(){var channel=lastChannel||selectedChannel||channelRows[0];if(channel)playChannel(channel);},reload:function(){var saved=profiles.filter(function(p){return p.portal===profile.portal&&p.mac===profile.mac;})[0];connect(saved||profile);}}}));
+      document.dispatchEvent(new CustomEvent('iptv:session',{detail:{provider:provider,profile:profile,player:player,channels:function(){return channelRows.slice();},selected:function(){return selectedChannel;},category:function(){return category;},playChannel:playChannel,playURL:playURL,stopPlayback:stopPlayback,watchLast:function(){var channel=lastChannel||selectedChannel||channelRows[0];if(channel)playChannel(channel);},reload:function(){var saved=profiles.filter(function(p){return p.portal===profile.portal&&p.mac===profile.mac;})[0];connect(saved||profile);}}}));
       provider.listCategories(function(error,rows){if(epoch!==connection)return;if(error){connectionFailed(error);return;}progress(75,'Loading live channels…');categoryRows=rows;
         [{id:'__all',name:'All'},{id:'__favorites',name:'Favorites'}].concat(rows).forEach(function(row){var b=document.createElement('button');b.textContent=row.name;b.setAttribute('data-category-id',row.id);b.onclick=function(){chooseCategory(row);};b.onfocus=function(){b.scrollIntoView({block:'nearest',inline:'nearest'});};element('categories').appendChild(b);});
-        if(rows.length)chooseCategory(rows[0],true);else connectionFailed({message:'The portal returned no live TV categories. Check your subscription or portal details.'});
+        if(rows.length){connectionReady();document.dispatchEvent(new CustomEvent('iptv:live-categories'));}else connectionFailed({message:'The portal returned no live TV categories. Check your subscription or portal details.'});
       });
     });
   }
@@ -152,7 +157,7 @@
 
   function playURL(url,title,options) {
     var epoch=++playbackGeneration;try{player.stop();}catch(_){}playingChannel=null;document.body.classList.remove('watching');updateRectangle();
-    player.open(url,function(){if(epoch!==playbackGeneration)return;try{player.play();playingChannel={id:'catalog',name:title};document.body.classList.add('watching');element('preview-title').textContent=title;if(options&&options.position)setTimeout(function(){if(epoch===playbackGeneration)player.seek(options.position);},250);fullscreen(true);status(null,title);}catch(_){status({message:'This TV could not start the selected video.'});}},function(){if(epoch===playbackGeneration)status({message:'The selected video format is unavailable on this TV.'});});
+    player.open(url,function(){if(epoch!==playbackGeneration)return;try{player.play();playingChannel={id:'catalog',name:title};document.body.classList.add('watching');element('preview-title').textContent=title;if(options&&options.position)setTimeout(function(){if(epoch===playbackGeneration)player.seek(options.position);},250);fullscreen(true);status(null,title);}catch(_){status({message:'This TV could not start the selected video.'});}},function(){if(epoch===playbackGeneration){status({message:'The selected video format is unavailable on this TV.'});document.dispatchEvent(new CustomEvent('iptv:catalog-error'));}});
   }
   player.onEvent=function(type,value){document.dispatchEvent(new CustomEvent('iptv:player-event',{detail:{type:type,value:value}}));if(type==='buffering'&&value<100)status(null,'Buffering… '+value+'%');};
   var subtitleTimer=null;
@@ -262,7 +267,7 @@
       if(code===10252){event.preventDefault();try{if(player.state==='PLAYING')player.pause();else if(player.state==='PAUSED')player.play();}catch(_){}return;}
       if((code===38 || code===40) && active && active.classList.contains('channel-row')) {
         var adjacent=code===38?active.previousElementSibling:active.nextElementSibling;
-        if(adjacent){adjacent.focus();event.preventDefault();return;}
+        if(adjacent){adjacent.focus();event.preventDefault();return;}if(code===38){element('live-search').focus();event.preventDefault();return;}
       }
     }
     if (code === 13 && fields.indexOf(active) >= 0) {
@@ -272,7 +277,7 @@
     }
     if (code === 10009 || code === 27 || code === 8) {
       if(!element('startup').hidden){event.preventDefault();showSetup(profiles.length?Math.max(0,selected):-1);return;}
-      if (!browser.hidden) { event.preventDefault(); if(document.body.classList.contains('fullscreen')) fullscreen(false); else disconnect(); }
+      if (!browser.hidden) { event.preventDefault(); if(document.body.classList.contains('fullscreen')) fullscreen(false); else document.dispatchEvent(new CustomEvent('iptv:live-categories')); }
       else if (!editor.hidden) { event.preventDefault(); showHome(); }
       else if (window.tizen && window.tizen.application) {
         try { if(confirm('Exit IPTV TORONTO?'))window.tizen.application.getCurrentApplication().exit(); } catch (_) {}
