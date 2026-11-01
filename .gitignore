@@ -1,0 +1,7 @@
+smart-tv/samsung/build/
+.local/
+.gradle/
+**/build/
+local.properties
+*.jks
+*.keystore

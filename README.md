@@ -1,9 +1,13 @@
-# Personal STB Multi-Profile Android
+# IPTV Toronto
 
-Initial Android project: locally saved editable profiles (name, HTTPS portal URL, MAC address), add/edit/delete. **This is a profile manager, not yet an STB emulator or IPTV player.** No credentials or provider endpoints are embedded.
+Native Android TV / Fire TV development project in `app/`: Kotlin, Compose for TV, Stalker portal transport, secure profiles, local favourites/progress and Media3 playback. No provider, MAC, channel list or sample programming is bundled.
 
-## Build
-GitHub Actions builds on pushes to main and on manual workflow dispatch. Download the **Personal-STB-debug-APK** artifact from the completed workflow run and unzip it to obtain app-debug.apk.
+See [Android architecture, build instructions, test plan, visual QA and incomplete requirements](docs/ANDROID_TV.md). This is a development build with outstanding production requirements, not a completed store release.
 
-## Next milestones
-Portal connectivity, device-specific MAC identity, remote/D-pad navigation, and authorized streaming compatibility require separate implementation and testing.
+```text
+./gradlew testDebugUnitTest lintDebug assembleDebug assembleRelease bundleRelease
+```
+
+The universal debug APK is installable for testing. Release APK/AAB require owner signing configuration before distribution. The Android workflow uploads build artifacts and reports; check its actual run result before using them.
+
+The separate Samsung Tizen/webOS work remains in `smart-tv/`.
